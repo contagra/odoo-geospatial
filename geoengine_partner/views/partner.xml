@@ -24,6 +24,7 @@
                 <field name="zip" />
                 <field name="city" />
                 <field name="country_id" />
+                <field name="geo_point" />
             </geoengine>
         </field>
         <field eval="16" name="priority" />
