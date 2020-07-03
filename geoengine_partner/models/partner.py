@@ -9,4 +9,4 @@ class ResPartner(models.Model):
 
     _inherit = "res.partner"
 
-    geo_point = fields.GeoPoint("Location", srid=4326)
+    location = fields.GeoPoint("Location", srid=4326)
