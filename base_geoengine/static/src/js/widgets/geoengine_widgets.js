@@ -287,8 +287,8 @@ odoo.define('base_geoengine.geoengine_widgets', function (require) {
                 this.map.addLayer(this.vectorLayer);
 
                 this.format = new ol.format.GeoJSON({
-                    internalProjection: this.map.getView().getProjection(),
-                    externalProjection: 'EPSG:' + this.srid,
+                    featureProjection: this.map.getView().getProjection(),
+                    dataProjection: 'EPSG:' + this.srid,
                 });
 
                 $(document).trigger('FieldGeoEngineEditMap:ready', [this.map]);
