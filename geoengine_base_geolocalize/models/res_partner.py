@@ -33,7 +33,7 @@ _logger = logging.getLogger(__name__)
 
 
 class ResPartner(models.Model):
-    """Add geo_point to partner using a function field"""
+    """Add location to partner using a function field"""
 
     _inherit = "res.partner"
 
@@ -78,20 +78,13 @@ class ResPartner(models.Model):
         return True
 
     @api.depends("partner_latitude", "partner_longitude")
-    def _compute_geo_point(self):
+    def _compute_location(self):
         """
-        Set the `geo_point` of the partner depending of its `partner_latitude`
+        Set the `location` of the partner depending of its `partner_latitude`
         and its `partner_longitude`
-        **Notes**
-        If one of those parameters is not set then reset the partner's
-        geo_point and do not recompute it
         """
         for partner in self:
-            if not partner.partner_latitude or not partner.partner_longitude:
-                partner.geo_point = False
-            else:
-                partner.geo_point = fields.GeoPoint.from_latlon(
+            if partner.partner_latitude and partner.partner_longitude:
+                partner.location = fields.GeoPoint.from_latlon(
                     partner.env.cr, partner.partner_latitude, partner.partner_longitude
                 )
-
-    geo_point = fields.GeoPoint(readonly=True, store=True, compute="_compute_geo_point")

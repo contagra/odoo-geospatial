@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="base_geolocalize.view_crm_partner_geo_form"/>
         <field name="arch" type="xml">
             <field name="date_localization" position="after">
-                <field name="geo_point" widget="geo_edit_map"
+                <field name="location" widget="geo_edit_map"
                        groups="base_geoengine.group_geoengine_user,base_geoengine.group_geoengine_admin"/>
             </field>
         </field>

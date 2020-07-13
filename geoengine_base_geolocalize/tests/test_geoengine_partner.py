@@ -20,19 +20,19 @@ import odoo.tests.common as common
 
 
 class TestGeoenginePartner(common.TransactionCase):
-    def test_get_geo_point(self):
+    def test_get_location(self):
         partner_id = self.env.ref("base.user_root").partner_id
         partner_id.partner_longitude = False
         partner_id.partner_latitude = False
         self.assertFalse(
-            partner_id.geo_point, "Should not have geo_point with no latlon"
+            partner_id.location, "Should not have location with no latlon"
         )
         partner_id.partner_latitude = 20
         self.assertFalse(
-            partner_id.geo_point, "Should not have geo_point with no latlon"
+            partner_id.location, "Should not have location with no latlon"
         )
         partner_id.partner_longitude = 20
-        self.assertTrue(partner_id.geo_point, "Should have geo_point")
+        self.assertTrue(partner_id.location, "Should have location")
 
     def test_geo_localize(self):
         vals = {
