@@ -222,7 +222,7 @@ msgstr ""
 
 #. module: base_geoengine
 #: model:ir.ui.menu,name:base_geoengine.geoengine_base_menu
-msgid "GeoEngine Backend"
+msgid "GIS
 msgstr ""
 
 #. module: base_geoengine
