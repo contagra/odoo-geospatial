@@ -17,6 +17,11 @@
         </xpath>
     </template>
 
-    <menuitem name="GIS" id="geoengine_base_menu" web_icon="base_geoengine,images/map.png" groups="group_geoengine_admin" web_icon_hover="base_geoengine,images/map-hover.png" />
+    <menuitem
+        name="GIS"
+        id="geoengine_base_menu"
+        web_icon="base_geoengine,static/description/icon.png"
+        groups="group_geoengine_admin"
+    />
 
 </odoo>
