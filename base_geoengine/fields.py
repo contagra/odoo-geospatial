@@ -96,6 +96,7 @@ class GeoField(fields.Field):
         """Transform input into an object"""
         shape = convert.value_to_shape(value)
         if same_type and not shape.is_empty:
+            shape = convert.convert_shape(shape, self.geo_type)
             if shape.geom_type.lower() != self.geo_type.lower():
                 msg = _("Geo Value %s must be of the same type %s as fields")
                 raise TypeError(msg % (shape.geom_type.lower(), self.geo_type.lower()))
