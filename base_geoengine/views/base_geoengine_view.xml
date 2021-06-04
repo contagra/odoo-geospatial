@@ -27,7 +27,7 @@
         </xpath>
     </template>
 
-    <menuitem name="GeoEngine Backend" id="geoengine_base_menu"
+    <menuitem name="Maps" id="geoengine_base_menu"
               web_icon="base_geoengine,images/map.png"
               groups="group_geoengine_admin"/>
 
