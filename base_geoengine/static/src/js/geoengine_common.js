@@ -95,13 +95,19 @@ odoo.define('base_geoengine.BackgroundLayers', function (require) {
                     if (l.resolutions) {
                         tilegrid_opt.resolutions =
                             l.resolutions.split(',').map(Number);
-                        var nbRes = tilegrid_opt.resolutions.length;
-                        var matrixIds = new Array(nbRes);
-                        for (var i = 0; i < nbRes; i++) {
-                            matrixIds[i] = i;
+                    } else {
+                        var size = ol.extent.getWidth(source_opt.projection.getExtent()) / 256;
+                        tilegrid_opt.resolutions = new Array(22);
+                        for (var z = 0; z < tilegrid_opt.resolutions.length; ++z) {
+                            tilegrid_opt.resolutions[z] = size / Math.pow(2, z);
                         }
-                        tilegrid_opt.matrixIds = matrixIds;
                     }
+                    var nbRes = tilegrid_opt.resolutions.length;
+                    var matrixIds = new Array(nbRes);
+                    for (var i = 0; i < nbRes; i++) {
+                        matrixIds[i] = i;
+                    }
+                    tilegrid_opt.matrixIds = matrixIds;
                     if (l.max_extent) {
                         var extent = l.max_extent.split(',').map(Number);
                         layer_opt.extent = extent;

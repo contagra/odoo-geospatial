@@ -48,10 +48,16 @@
         <field name="begin_color">#FF680A</field>
     </record>
     <record id="geoengine_raster_layer_res_partner_osm" model="geoengine.raster.layer">
-        <field name="raster_type">osm</field>
+        <field name="raster_type">wmts</field>
         <field name="name">Background</field>
         <field name="view_id" ref="ir_ui_view_geo_partner" />
-        <field eval="0" name="overlay" />
+        <field name="overlay" eval="0" />
+        <field name="use_to_edit" eval="1" />
+        <field name="url">https://api.mapbox.com/styles/v1/agrista/cjdmrq0wu0iq02so2sevccwlm/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=pk.eyJ1IjoiYWdyaXN0YSIsImEiOiJjaXdlcjAwMnEwMDQ2MnRrNGUycmo5Ym5zIn0.PzmdvMAwzbAfDHOq5sruOQ</field>
+        <field name="matrix_set">EPSG:3857</field>
+        <field name="projection">EPSG:3857</field>
+        <field name="request_encoding">REST</field>
+        <field name="format_suffix">image/png</field>
     </record>
 
     <!-- Add map to Contacts menu -->
