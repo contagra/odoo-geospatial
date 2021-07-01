@@ -154,8 +154,8 @@ odoo.define('base_geoengine.geoengine_widgets', function (require) {
             if (this.map) {
 
                 var ft = new ol.Feature({
-                    geometry: new ol.format.GeoJSON().readGeometry(value),
-                    labelPoint:  new ol.format.GeoJSON().readGeometry(value),
+                    geometry: this.format.readGeometry(value),
+                    labelPoint: this.format.readGeometry(value),
                 });
                 this.source.clear();
                 this.source.addFeature(ft);
@@ -287,8 +287,8 @@ odoo.define('base_geoengine.geoengine_widgets', function (require) {
                 this.map.addLayer(this.vectorLayer);
 
                 this.format = new ol.format.GeoJSON({
-                    internalProjection: this.map.getView().getProjection(),
-                    externalProjection: 'EPSG:' + this.srid,
+                    featureProjection: this.map.getView().getProjection(),
+                    dataProjection: 'EPSG:' + this.srid,
                 });
 
                 $(document).trigger('FieldGeoEngineEditMap:ready', [this.map]);
@@ -342,10 +342,10 @@ odoo.define('base_geoengine.geoengine_widgets', function (require) {
              *
              * @return [x, y]
              */
-            var x = openerp.web.parse_value(this.$input.eq(0).val(), {
+            var x = odoo.web.parse_value(this.$input.eq(0).val(), {
                 type: 'float',
             });
-            var y = openerp.web.parse_value(this.$input.eq(1).val(), {
+            var y = odoo.web.parse_value(this.$input.eq(1).val(), {
                 type: 'float',
             });
             return [x, y];

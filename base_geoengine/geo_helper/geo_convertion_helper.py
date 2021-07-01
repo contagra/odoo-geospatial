@@ -4,7 +4,8 @@ import logging
 
 try:
     from shapely import wkt, wkb
-    from shapely.geometry import asShape
+    from shapely.geometry import (asShape, MultiLineString, MultiPoint,
+                                  MultiPolygon)
     from shapely.geometry.base import BaseGeometry
     import geojson
 except ImportError:
@@ -36,3 +37,13 @@ def value_to_shape(value, use_wkb=False):
             "Write/create/search geo type must be wkt/geojson "
             "string or must respond to wkt"
         )
+
+
+def convert_shape(shape, geo_type):
+    if shape.geom_type == 'LineSting' and geo_type == 'MULTILINESTRING':
+        return MultiLineString([shape])
+    elif shape.geom_type == 'Point' and geo_type == 'MULTIPOINT':
+        return MultiPoint([shape])
+    elif shape.geom_type == 'Polygon' and geo_type == 'MULTIPOLYGON':
+        return MultiPolygon([shape])
+    return shape

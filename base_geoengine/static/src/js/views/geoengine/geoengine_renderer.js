@@ -295,10 +295,13 @@ odoo.define('base_geoengine.GeoengineRenderer', function (require) {
                 }
 
                 var json_geometry = item.data[cfg.geo_field_id[1]];
+                var format = new ol.format.GeoJSON({
+                    featureProjection: this.map.getView().getProjection(),
+                    dataProjection: 'EPSG:' + item.fields[cfg.geo_field_id[1]].srid,
+                });
                 if (json_geometry) {
                     var feature = new ol.Feature({
-                        geometry: new ol.format.GeoJSON()
-                            .readGeometry(json_geometry),
+                        geometry: format.readGeometry(json_geometry),
                         attributes: attributes,
                     });
                     var id = String(attributes.id);
