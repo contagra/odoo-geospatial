@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="geoengine_demo_menu"
+        name="Maps Demo"
+        groups="base_geoengine.group_geoengine_user"
+        web_icon="base_geoengine_demo,images/map.png" />
+
+    <menuitem id="geoengine_demo_retail_menu"
+        name="Maps Samples"
+        parent="geoengine_demo_menu"
+        sequence="10"
+        groups="base_geoengine.group_geoengine_user,base_geoengine.group_geoengine_admin" />
+
+</odoo>
