@@ -289,7 +289,7 @@ odoo.define('base_geoengine.GeoengineRenderer', function (require) {
                 });
 
                 if (cfg.display_polygon_labels === true) {
-                    attributes.label = item[cfg.attribute_field_id[1]];
+                    attributes.label = item.data[cfg.attribute_field_id[1]];
                 } else {
                     attributes.label = '';
                 }
@@ -720,13 +720,44 @@ odoo.define('base_geoengine.GeoengineRenderer', function (require) {
         },
 
         _getCustomSelectedStyleFunction: function () {
+            var actives = this.mapOptions.geoengine_layers.actives,
+                cfg = actives[0];
+
+            var opacity = 0.5;
+            var color_hex = cfg.begin_color || DEFAULT_BEGIN_COLOR;
+            var color = chroma(color_hex).alpha(opacity).css();
+            // Basic
+            var fill = new ol.style.Fill({
+                    color: color,
+            });
+            var stroke = new ol.style.Stroke({
+                color: '#333333',
+                width: 2,
+            });
+            var olStyleText = new ol.style.Text({
+                text: '',
+                fill: new ol.style.Fill({
+                    color: '#000000',
+                }),
+                stroke: new ol.style.Stroke({
+                    color: '#FFFFFF',
+                    width: 5,
+                }),
+            });
+
             var self = this;
             return function (feature) {
                 var geometryType = feature.getGeometry().getType();
                 var styles = ol.style.Style.createDefaultEditing();
                 var geometryStyle = styles[geometryType];
                 if (geometryType !== ol.geom.GeometryType.POINT) {
-                    return geometryStyle;
+                    var label_text = feature.values_.attributes.label;
+                    olStyleText.text_ = label_text || ''
+                    return [new ol.style.Style({
+                        fill: fill,
+                        stroke: stroke,
+                        text: olStyleText
+                    })];
                 }
 
                 var geometryStylePoint = geometryStyle[0];
