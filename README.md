@@ -54,7 +54,11 @@ A geospatial API is provided, to add your own functionalites at your convenience
 
 [//]: # (addons)
 
-This part will be replaced when running the oca-gen-addons-table script from OCA/maintainer-tools.
+Available addons
+----------------
+addon | version | maintainers | summary
+--- | --- | --- | ---
+[base_google_map](base_google_map/) | 14.0.1.0.1 | [![gityopie](https://github.com/gityopie.png?size=30px)](https://github.com/gityopie) [![wolfhall](https://github.com/wolfhall.png?size=30px)](https://github.com/wolfhall) | View modes and widgets to integrate Google Maps in your UI
 
 [//]: # (end addons)
 
