@@ -43,7 +43,7 @@ class ResPartner(models.Model):
         https://nominatim.org/release-docs/latest/api/Overview/
         """
         url = "http://nominatim.openstreetmap.org/search"
-        headers = {"User-Agent": "Odoobot/13.0.1.0.0 (OCA-geospatial)"}
+        headers = {"User-Agent": "Odoobot/14.0.1.0.0 (OCA-geospatial)"}
 
         for partner in self:
             pay_load = {
