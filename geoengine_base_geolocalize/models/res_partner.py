@@ -19,6 +19,7 @@
 ##############################################################################
 
 import logging
+import json
 
 from odoo import api, exceptions, fields, models
 from odoo.tools.translate import _
@@ -65,11 +66,20 @@ class ResPartner(models.Model):
                 raise exceptions.UserError(_("Geocoding error. \n %s") % str(e))
             vals = request_result.json()
             vals = vals and vals[0] or {}
+            geojson = {
+                "type": "Point",
+                "coordinates": [
+                    float(vals.get("lon")),
+                    float(vals.get("lat"))
+                ]
+            }
+            geostr = json.dumps(geojson)
             partner.write(
                 {
                     "partner_latitude": vals.get("lat"),
                     "partner_longitude": vals.get("lon"),
                     "date_localization": fields.Date.today(),
+                    "location": geostr,
                 }
             )
 
@@ -77,14 +87,38 @@ class ResPartner(models.Model):
         self.geocode_address()
         return True
 
+    @api.onchange("partner_latitude", "partner_longitude")
     @api.depends("partner_latitude", "partner_longitude")
     def _compute_location(self):
         """
-        Set the `location` of the partner depending of its `partner_latitude`
-        and its `partner_longitude`
+        Set the `location` of the partner depending on `partner_latitude`
+        and `partner_longitude`
         """
         for partner in self:
             if partner.partner_latitude and partner.partner_longitude:
-                partner.location = fields.GeoPoint.from_latlon(
-                    partner.env.cr, partner.partner_latitude, partner.partner_longitude
+                geojson = {
+                    "type": "Point",
+                    "coordinates": [
+                        partner.partner_longitude,
+                        partner.partner_latitude
+                    ]
+                }
+                geostr = json.dumps(geojson)
+                partner.write(
+                    {
+                        "location": geostr,
+                    }
                 )
+
+    # @api.model
+    # def create(self, vals):
+    #     partner = super(ResPartner, self).create(vals)
+    #     if not partner.location:
+    #         partner._compute_location()
+    #     return partner
+    #
+    def write(self, vals):
+        res = super(ResPartner, self).write(vals)
+        # if 'partner_latitude' or 'partner_longitude' in vals:
+        #     self._compute_location()
+        return res

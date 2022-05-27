@@ -47,6 +47,7 @@
         <field eval="1" name="nb_class" />
         <field name="begin_color">#FF680A</field>
     </record>
+
     <record id="geoengine_raster_layer_res_partner_osm" model="geoengine.raster.layer">
         <field name="raster_type">wmts</field>
         <field name="name">Background</field>
@@ -73,8 +74,9 @@
             Create a contact in your address book
           </p>
             <p>
-            Odoo helps you to easily track all activities related to a customer.
+            Easily track all activities related to a customer.
           </p>
         </field>
     </record>
+
 </odoo>

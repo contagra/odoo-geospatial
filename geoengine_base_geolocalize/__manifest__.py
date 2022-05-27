@@ -24,7 +24,11 @@
     "author": "ACSONE SA/NV, Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "website": "http://www.acsone.eu",
-    "depends": ["base", "geoengine_partner", "base_geolocalize"],
+    "depends": [
+        "base",
+        "geoengine_partner",
+        "base_geolocalize"
+    ],
     "data": ["views/res_partner_view.xml"],
     "installable": True,
     "application": True,
