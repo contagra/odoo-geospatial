@@ -110,15 +110,25 @@ class ResPartner(models.Model):
                     }
                 )
 
-    # @api.model
-    # def create(self, vals):
-    #     partner = super(ResPartner, self).create(vals)
-    #     if not partner.location:
-    #         partner._compute_location()
-    #     return partner
-    #
+    @api.model
+    def create(self, vals):
+        partner = super(ResPartner, self).create(vals)
+        if not partner.location:
+            partner._compute_location()
+        return partner
+
     def write(self, vals):
         res = super(ResPartner, self).write(vals)
-        # if 'partner_latitude' or 'partner_longitude' in vals:
-        #     self._compute_location()
+        if 'partner_latitude' or 'partner_longitude' in vals:
+            long = vals.get('partner_longitude', self.partner_longitude)
+            lat = vals.get('partner_latitude', self.partner_latitude)
+            geojson = {
+                "type": "Point",
+                "coordinates": [
+                    long,
+                    lat
+                ]
+            }
+            geostr = json.dumps(geojson)
+            vals['location'] = geostr
         return res

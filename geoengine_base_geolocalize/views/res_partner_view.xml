@@ -13,7 +13,7 @@
                 <field name="location" widget="geo_edit_map"
                        groups="base_geoengine.group_geoengine_user,base_geoengine.group_geoengine_admin"/>
             </xpath>
-            <xpath expr="//separator[@string='Geolocation']" position="replace"/>
+            <xpath expr="//separator[@colspan=2]" position="replace"/>
         </field>
     </record>
 
