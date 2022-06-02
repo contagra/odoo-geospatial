@@ -119,7 +119,7 @@ class ResPartner(models.Model):
 
     def write(self, vals):
         res = super(ResPartner, self).write(vals)
-        if 'partner_latitude' or 'partner_longitude' in vals:
+        if vals.get('partner_latitude') or vals.get('partner_longitude'):
             long = vals.get('partner_longitude', self.partner_longitude)
             lat = vals.get('partner_latitude', self.partner_latitude)
             geojson = {
