@@ -23,6 +23,7 @@ import json
 
 from odoo import api, exceptions, fields, models
 from odoo.tools.translate import _
+from shapely.geometry import Point
 
 try:
     import requests
@@ -48,14 +49,22 @@ class ResPartner(models.Model):
 
         for partner in self:
             pay_load = {
-                "limit": 1,
-                "format": "json",
-                "street": partner.street or "",
-                "postalCode": partner.zip or "",
-                "city": partner.city or "",
-                "state": partner.state_id and partner.state_id.name or "",
-                "country": partner.country_id and partner.country_id.name or "",
-                "countryCodes": partner.country_id and partner.country_id.code or "",
+                "limit":
+                    1,
+                "format":
+                    "json",
+                "street":
+                    partner.street or "",
+                "postalCode":
+                    partner.zip or "",
+                "city":
+                    partner.city or "",
+                "state":
+                    partner.state_id and partner.state_id.name or "",
+                "country":
+                    partner.country_id and partner.country_id.name or "",
+                "countryCodes":
+                    partner.country_id and partner.country_id.code or "",
             }
 
             request_result = requests.get(url, params=pay_load, headers=headers)
@@ -68,20 +77,16 @@ class ResPartner(models.Model):
             vals = vals and vals[0] or {}
             geojson = {
                 "type": "Point",
-                "coordinates": [
-                    float(vals.get("lon")),
-                    float(vals.get("lat"))
-                ]
+                "coordinates": [float(vals.get("lon")),
+                                float(vals.get("lat"))]
             }
             geostr = json.dumps(geojson)
-            partner.write(
-                {
-                    "partner_latitude": vals.get("lat"),
-                    "partner_longitude": vals.get("lon"),
-                    "date_localization": fields.Date.today(),
-                    "location": geostr,
-                }
-            )
+            partner.write({
+                "partner_latitude": vals.get("lat"),
+                "partner_longitude": vals.get("lon"),
+                "date_localization": fields.Date.today(),
+                "location": geostr,
+            })
 
     def geo_localize(self):
         self.geocode_address()
@@ -97,18 +102,33 @@ class ResPartner(models.Model):
         for partner in self:
             if partner.partner_latitude and partner.partner_longitude:
                 geojson = {
-                    "type": "Point",
+                    "type":
+                        "Point",
                     "coordinates": [
-                        partner.partner_longitude,
-                        partner.partner_latitude
+                        partner.partner_longitude, partner.partner_latitude
                     ]
                 }
                 geostr = json.dumps(geojson)
-                partner.write(
-                    {
-                        "location": geostr,
-                    }
-                )
+                partner.write({
+                    "location": geostr,
+                })
+
+    @api.onchange("location")
+    @api.depends("location")
+    def _compute_lat_long(self):
+        """
+        Set the `partner_latitude` and `partner_longitude` of the partner
+        depending on `location`
+        """
+        for partner in self:
+            if partner.location:
+                lat = partner.location.y
+                long = partner.location.x
+                partner.write({
+                    "date_localization": fields.Date.today(),
+                    "partner_latitude": lat,
+                    "partner_longitude": long,
+                })
 
     @api.model
     def create(self, vals):
@@ -119,16 +139,12 @@ class ResPartner(models.Model):
 
     def write(self, vals):
         res = super(ResPartner, self).write(vals)
+        """
         if vals.get('partner_latitude') or vals.get('partner_longitude'):
             long = vals.get('partner_longitude', self.partner_longitude)
             lat = vals.get('partner_latitude', self.partner_latitude)
-            geojson = {
-                "type": "Point",
-                "coordinates": [
-                    long,
-                    lat
-                ]
-            }
+            geojson = {"type": "Point", "coordinates": [long, lat]}
             geostr = json.dumps(geojson)
             vals['location'] = geostr
+        """
         return res
