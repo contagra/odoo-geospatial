@@ -28,7 +28,7 @@ class GeoRasterLayer(models.Model):
         default="osm",
         required=True,
     )
-    name = fields.Char("Layer Name", size=256, translate=True, required=True)
+    name = fields.Char("Layer Name", size=256, required=True)
     url = fields.Char("Service URL", size=1024)
 
     # technical field to display or not wmts options
