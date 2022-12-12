@@ -8,7 +8,7 @@ from odoo import _, fields
 from odoo.tools import sql
 
 from .geo_db import create_geo_column
-from .geo_helper import geo_convertion_helper as convert
+from .geo_helper import geo_conversion_helper as convert
 
 logger = logging.getLogger(__name__)
 try:
@@ -28,7 +28,7 @@ class GeoField(fields.Field):
     """
 
     geo_type = None
-    srid = 3857
+    srid = 4326
     dim = 2
     gist_index = True
 
@@ -40,7 +40,7 @@ class GeoField(fields.Field):
     def column_type(self):
         return ("geometry", "geometry")
 
-    _slots = {"dim": 2, "srid": 3857, "gist_index": True}
+    _slots = {"dim": 2, "srid": 4326, "gist_index": True}
 
     def convert_to_column(self, value, record, values=None):
         """Convert value to database format
@@ -53,7 +53,7 @@ class GeoField(fields.Field):
         if shape_to_write.is_empty:
             return None
         else:
-            return shape_to_write.wkt
+            return "SRID=4326;{}".format(shape_to_write.wkt)
 
     def convert_to_cache(self, value, record, validate=True):
         val = value
@@ -116,7 +116,7 @@ class GeoField(fields.Field):
         check_data = cr.fetchone()
         if not check_data:
             raise TypeError(
-                "geometry_columns table seems to be corrupted."
+                "The geometry_columns table seems to be corrupted."
                 " SRID check is not possible"
             )
         if check_data[0] != self.srid:
@@ -131,8 +131,8 @@ class GeoField(fields.Field):
             )
         elif check_data[2] != self.dim:
             raise TypeError(
-                "Geo dimention modification is not implemented."
-                " We can not change dimention %s to %s" % (check_data[2], self.dim)
+                "Geo dimension modification is not implemented."
+                " We can not change dimension %s to %s" % (check_data[2], self.dim)
             )
         if self.gist_index:
             cr.execute(

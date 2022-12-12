@@ -6,3 +6,5 @@ from . import geo_helper
 from . import geo_ir
 from . import fields
 from .geo_db import init_postgis
+
+from . import models
