@@ -33,6 +33,13 @@
             'base_geoengine/static/src/js/views/view_registry.js',
             'base_geoengine/static/src/js/views/form_renderer.js',
             'base_geoengine/static/src/css/style.css',
+            '/base_geoengine/static/lib/ol-5.3.3/ol.css',
+            '/base_geoengine/static/lib/ol3-layerswitcher.css',
+            '/base_geoengine/static/lib/geostats-2.0.0/geostats.css',
+            '/base_geoengine/static/lib/ol-5.3.3/ol.js',
+            '/base_geoengine/static/lib/ol3-layerswitcher.js',
+            '/base_geoengine/static/lib/chromajs-0.8.0/chroma.js',
+            '/base_geoengine/static/lib/geostats-2.0.0/geostats.js',
         ],
         'web.assets_qweb': [
             'base_geoengine/static/src/**/*.xml',
