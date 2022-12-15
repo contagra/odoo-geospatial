@@ -17,8 +17,8 @@ def value_to_shape(value, use_wkb=False):
     if not value:
         return wkt.loads("GEOMETRYCOLLECTION EMPTY")
     if isinstance(value, str):
-        # We try to do this before parsing json exception
-        # exception are ressource costly
+        # We try to do this before parsing json
+        # exceptions are resource costly
         if "{" in value:
             geo_dict = geojson.loads(value)
             sh = shape(geo_dict)

@@ -53,7 +53,9 @@ class GeoField(fields.Field):
         if shape_to_write.is_empty:
             return None
         else:
-            return "SRID=4326;{}".format(shape_to_write.wkt)
+            wkt = shape_to_write.wkt
+            srid_wkt = "SRID=%s;%s" % (self.srid, wkt)
+            return str(srid_wkt)
 
     def convert_to_cache(self, value, record, validate=True):
         val = value
@@ -97,7 +99,7 @@ class GeoField(fields.Field):
 
     def entry_to_shape(self, value, same_type=False):
         """Transform input into an object"""
-        shape = convert.value_to_shape(value)
+        shape = convert.value_to_shape(value, use_wkb=True)
         if same_type and not shape.is_empty:
             if shape.geom_type.lower() != self.geo_type.lower():
                 msg = _("Geo Value %s must be of the same type %s as fields")

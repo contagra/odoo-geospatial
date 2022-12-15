@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import json
+
+from shapely import wkt, wkb, geometry
+
 from odoo import models, api, _
-from shapely import wkt, geometry
+
 
 class IrFieldsConverter(models.AbstractModel):
     _inherit = 'ir.fields.converter'
@@ -11,9 +14,10 @@ class IrFieldsConverter(models.AbstractModel):
     def _str_to_geo_multi_polygon(self, model, field, value):
         try:
             g1 = wkt.loads(value)
+            b1 = wkb.dumps(g1, hex=True, srid=4326)
             g2 = geometry.mapping(g1)
             js = json.dumps(g2)
-            return js, []
+            return b1, []
         except ValueError:
             raise self._format_import_error(
                 ValueError,
