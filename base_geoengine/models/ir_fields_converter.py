@@ -13,11 +13,7 @@ class IrFieldsConverter(models.AbstractModel):
     @api.model
     def _str_to_geo_multi_polygon(self, model, field, value):
         try:
-            g1 = wkt.loads(value)
-            b1 = wkb.dumps(g1, hex=True, srid=4326)
-            g2 = geometry.mapping(g1)
-            js = json.dumps(g2)
-            return b1, []
+            return wkt.loads(value), []
         except ValueError:
             raise self._format_import_error(
                 ValueError,
