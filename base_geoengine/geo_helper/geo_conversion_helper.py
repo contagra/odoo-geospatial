@@ -12,7 +12,7 @@ except ImportError:
     logger.warning("Shapely or geojson are not available in the sys path")
 
 
-def value_to_shape(value, use_wkb=False):
+def value_to_shape(value):
     """Transforms input into a Shapely object"""
     if not value:
         return wkt.loads("GEOMETRYCOLLECTION EMPTY")
@@ -23,10 +23,10 @@ def value_to_shape(value, use_wkb=False):
             geo_dict = geojson.loads(value)
             sh = shape(geo_dict)
             return sh
-        elif use_wkb:
-            return wkb.loads(value, hex=True)
-        else:
+        elif "(" in value:
             return wkt.loads(value)
+        else:
+            return wkb.loads(value, hex=True)
     elif hasattr(value, "wkt"):
         if isinstance(value, BaseGeometry):
             return value

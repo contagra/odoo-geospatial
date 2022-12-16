@@ -2,6 +2,8 @@
 # Copyright 2016 Yannick Vaucher (Camptocamp SA)
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import logging
+import json
+
 from operator import attrgetter
 
 from odoo import _, fields
@@ -11,9 +13,10 @@ from .geo_helper import geo_conversion_helper as convert
 
 logger = logging.getLogger(__name__)
 try:
-    from shapely.geometry import Point
+    from shapely.geometry import Point, mapping
     from shapely.geometry.base import BaseGeometry
     from shapely.wkb import loads as wkbloads
+
     import geojson
 except ImportError:
     logger.warning("Shapely or geojson are not available in the sys path")
@@ -52,9 +55,9 @@ class GeoField(fields.Field):
         if shape_to_write.is_empty:
             return None
         else:
-            wkt = shape_to_write.wkt
-            srid_wkt = "SRID=%s;%s" % (self.srid, wkt)
-            return wkt
+            #g2 = mapping(shape_to_write)
+            #return json.dumps(g2)
+            return shape_to_write.wkt
 
     def convert_to_cache(self, value, record, validate=True):
         val = value
@@ -70,7 +73,7 @@ class GeoField(fields.Field):
         """
         if not value:
             return False
-        return convert.value_to_shape(value, use_wkb=True)
+        return convert.value_to_shape(value)
 
     def convert_to_read(self, value, record, use_name_get=True):
         if not isinstance(value, BaseGeometry):
