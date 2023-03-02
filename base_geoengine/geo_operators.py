@@ -46,7 +46,9 @@ def geo_search(model, domain=None, geo_domain=None, offset=0, limit=None, order=
     domain = domain or []
     geo_domain = geo_domain or []
     model.env["ir.model.access"].check(model._name, "read")
-    # _where_calc = Computes the WHERE clause needed to implement an OpenERP domain. :param list domain: the domain to compute, active_test: whether the default filtering of records with
+    # _where_calc = Computes the WHERE clause needed to implement an OpenERP domain.
+    # :param list domain: the domain to compute, active_test: whether the default
+    # filtering of records with
     query = model._where_calc(domain, active_test=True)
     # Add what's missing in query to implement all appropriate ir.rules
     model._apply_ir_rules(query, "read")
@@ -144,10 +146,10 @@ class GeoOperator(object):
         rel search"""
         try:
             rel_model._fields[rel_col]
-        except Exception:
+        except Exception as exc:
             raise Exception(
                 "Model {} has no column {}".format(rel_model._name, rel_col)
-            )
+            ) from exc
         return "{}.{}".format(rel_model._table, rel_col)
 
     def _get_direct_como_op_sql(
