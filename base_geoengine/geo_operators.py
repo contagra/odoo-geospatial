@@ -146,10 +146,10 @@ class GeoOperator(object):
         rel search"""
         try:
             rel_model._fields[rel_col]
-        except Exception as exc:
+        except Exception:
             raise Exception(
                 "Model {} has no column {}".format(rel_model._name, rel_col)
-            ) from exc
+            ) from None
         return "{}.{}".format(rel_model._table, rel_col)
 
     def _get_direct_como_op_sql(
