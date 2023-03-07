@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="view_partner_form" model="ir.ui.view" >
+    <record id="view_partner_form" model="ir.ui.view">
         <field name="name">view.partner.form.inherit.geoengine.partner</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
@@ -29,6 +29,15 @@
                 <field name="city"/>
                 <field name="country_id"/>
                 <field name="location"/>
+                <templates>
+                    <t t-name="info_box">
+                        <field name="name"/>
+                        <ul>
+                            <li><field name="city"/>                            </li>
+                            <li><field name="country_id"/>                            </li>
+                        </ul>
+                    </t>
+                </templates>
             </geoengine>
         </field>
     </record>
@@ -43,11 +52,11 @@
     <record id="geoengine_vector_layer_res_partner" model="geoengine.vector.layer">
         <field name="name">Location</field>
         <field name="geo_field_id" ref="geoengine_partner.field_res_partner__location"/>
-        <field name="sequence" eval="6" />
+        <field name="sequence" eval="6"/>
         <field name="active_on_startup" eval="1"/>
         <field name="view_id" ref="res_partner_view_geoengine"/>
         <field name="geo_repr">basic</field>
-        <field name="nb_class" eval="1" />
+        <field name="nb_class" eval="1"/>
         <field name="begin_color">#FF680A</field>
     </record>
 

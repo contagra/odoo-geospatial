@@ -85,7 +85,7 @@ class ResPartner(models.Model):
                 "partner_latitude": vals.get("lat"),
                 "partner_longitude": vals.get("lon"),
                 "date_localization": fields.Date.today(),
-                "location_geom": geostr,
+                "location": geostr,
             })
 
     def geo_localize(self):
