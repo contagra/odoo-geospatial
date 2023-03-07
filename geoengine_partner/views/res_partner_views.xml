@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form" model="ir.ui.view" >
+        <field name="name">view.partner.form.inherit.geoengine.partner</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <notebook>
+                <page string="Map">
+                    <field name="location" widget="geo_edit_map"
+                           groups="base_geoengine.group_geoengine_user,base_geoengine.group_geoengine_admin"/>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+    <record id="res_partner_view_geoengine" model="ir.ui.view">
+        <field name="name">res.partner.view.geoengine</field>
+        <field name="model">res.partner</field>
+        <field eval="16" name="priority"/>
+        <field name="arch" type="xml">
+            <geoengine>
+                <field name="name" select="1"/>
+                <field name="title"/>
+                <field name="function"/>
+                <field name="website"/>
+                <field name="zip"/>
+                <field name="city"/>
+                <field name="country_id"/>
+                <field name="location"/>
+            </geoengine>
+        </field>
+    </record>
+
+    <record id="res_partner_view_geoengine_action" model="ir.actions.act_window.view">
+        <field eval="20" name="sequence"/>
+        <field name="view_mode">geoengine</field>
+        <field name="view_id" ref="res_partner_view_geoengine"/>
+        <field name="act_window_id" ref="base.action_partner_form"/>
+    </record>
+
+    <record id="geoengine_vector_layer_res_partner" model="geoengine.vector.layer">
+        <field name="name">Location</field>
+        <field name="geo_field_id" ref="geoengine_partner.field_res_partner__location"/>
+        <field name="sequence" eval="6" />
+        <field name="active_on_startup" eval="1"/>
+        <field name="view_id" ref="res_partner_view_geoengine"/>
+        <field name="geo_repr">basic</field>
+        <field name="nb_class" eval="1" />
+        <field name="begin_color">#FF680A</field>
+    </record>
+
+    <record id="geoengine_raster_layer_res_partner_osm" model="geoengine.raster.layer">
+        <field name="name">Background</field>
+        <field name="raster_type">osm</field>
+        <field name="view_id" ref="res_partner_view_geoengine"/>
+        <field eval="0" name="overlay"/>
+    </record>
+
+    <record id="geoengine_raster_layer_res_partner_background" model="geoengine.raster.layer">
+        <field name="raster_type">wmts</field>
+        <field name="name">Background</field>
+        <field name="view_id" ref="res_partner_view_geoengine"/>
+        <field name="overlay" eval="0"/>
+        <field name="use_to_edit" eval="1"/>
+        <field name="url">
+            https://api.mapbox.com/styles/v1/agrista/cjdmrq0wu0iq02so2sevccwlm/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=pk.eyJ1IjoiYWdyaXN0YSIsImEiOiJjaXdlcjAwMnEwMDQ2MnRrNGUycmo5Ym5zIn0.PzmdvMAwzbAfDHOq5sruOQ
+        </field>
+        <field name="matrix_set">EPSG:3857</field>
+        <field name="projection">EPSG:3857</field>
+        <field name="request_encoding">REST</field>
+        <field name="format_suffix">image/png</field>
+    </record>
+
+    <!-- Add map to Contacts menu -->
+    <record id="contacts.action_contacts" model="ir.actions.act_window">
+        <field name="name">Contacts</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,tree,geoengine,form,activity</field>
+        <field name="search_view_id" ref="base.view_res_partner_filter"/>
+        <field name="context">{'default_is_company': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a contact in your address book
+            </p>
+            <p>
+                Easily track all activities related to a customer.
+            </p>
+        </field>
+    </record>
+
+</odoo>
