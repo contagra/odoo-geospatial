@@ -293,9 +293,14 @@ export class GeoengineRenderer extends Component {
             }
 
             const json_geometry = item._values[cfg.geo_field_id[1]];
+            const featureSrid = this.map.getView().getProjection()
             if (json_geometry) {
+                var format = new ol.format.GeoJSON({
+                    featureProjection: featureSrid,
+                    dataProjection: 'EPSG:' + item.fields[cfg.geo_field_id[1]].geo_type.srid,
+                });
                 const feature = new ol.Feature({
-                    geometry: new ol.format.GeoJSON().readGeometry(json_geometry),
+                    geometry: format.readGeometry(json_geometry),
                     attributes: attributes,
                 });
 
