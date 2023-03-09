@@ -5,5 +5,6 @@ from . import geo_view
 from . import geo_helper
 from . import geo_ir
 from . import fields
+from . import expressions
 from .geo_db import init_postgis
 from . import models
