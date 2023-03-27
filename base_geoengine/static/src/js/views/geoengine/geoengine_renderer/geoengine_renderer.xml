@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
     <t t-name="base_geoengine.GeoengineRenderer" owl="1">
         <div class="row view w-100">
-            <LayersPanel class="col" model="props.data.resModel" />
+            <LayersPanel model="props.data.resModel" />
             <div class="map_container col">
                 <div id="olmap" />
             </div>
@@ -17,8 +17,8 @@
             <div class="row d-flex justify-content-center">
                 <button
                     t-on-click="onInfoBoxClicked"
-                    class="btn btn-outline-primary w-50"
-                >EDIT</button>
+                    class="btn btn-secondary fa o_external_button fa-arrow-right w-50"
+                />
             </div>
         </div>
     </t>

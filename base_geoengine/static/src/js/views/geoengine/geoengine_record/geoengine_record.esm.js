@@ -1,4 +1,9 @@
 /** @odoo-module */
+
+/**
+ * Copyright 2023 ACSONE SA/NV
+ */
+
 import {Field} from "@web/views/fields/field";
 import {GeoengineCompiler} from "../geoengine_compiler.esm";
 import {INFO_BOX_ATTRIBUTE} from "../geoengine_arch_parser.esm";
@@ -16,6 +21,9 @@ function getValue(record, fieldName) {
 }
 
 export class GeoengineRecord extends Component {
+    /**
+     * Setup the record by compiling the arch and the info-box template.
+     */
     setup() {
         const {archInfo, templates} = this.props;
         const {arch} = archInfo;
@@ -27,6 +35,10 @@ export class GeoengineRecord extends Component {
         onWillUpdateProps(this.createRecord);
     }
 
+    /**
+     * Create record with formatter.
+     * @param {*} props
+     */
     createRecord(props) {
         const {record} = props;
         this.record = Object.create(null);

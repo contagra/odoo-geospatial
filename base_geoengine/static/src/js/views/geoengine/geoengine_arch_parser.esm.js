@@ -1,4 +1,9 @@
 /** @odoo-module */
+
+/**
+ * Copyright 2023 ACSONE SA/NV
+ */
+
 import {addFieldDependencies} from "@web/views/utils";
 import {Field} from "@web/views/fields/field";
 import {Widget} from "@web/views/widgets/widget";
@@ -13,7 +18,7 @@ export class GeoengineArchParser extends XMLParser {
      * @param {*} arch
      * @param {*} models
      * @param {*} modelName
-     * @returns
+     * @returns {Object}
      */
     parse(arch, models, modelName) {
         const xmlDoc = this.parseXML(arch);

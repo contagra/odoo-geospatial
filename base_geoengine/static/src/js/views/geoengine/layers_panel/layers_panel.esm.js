@@ -1,4 +1,9 @@
 /** @odoo-module */
+
+/**
+ * Copyright 2023 ACSONE SA/NV
+ */
+
 import {CheckBox} from "@web/core/checkbox/checkbox";
 import {store} from "../../../store.esm";
 import {useService} from "@web/core/utils/hooks";
@@ -11,7 +16,8 @@ export class LayersPanel extends Component {
         this.orm = useService("orm");
 
         /**
-         * Call the model method "get_geoengine_layers" to get all the layers in the database and add them to the store.
+         * Call the model method "get_geoengine_layers" to get all the layers
+         * in the database and add them to the store.
          */
         onWillStart(async () => {
             const result = await this.orm.call(
@@ -28,7 +34,7 @@ export class LayersPanel extends Component {
     }
 
     /**
-     * Is called when a raster layer is changed. The raster layer is set to visible and then
+     * This is called when a raster layer is changed. The raster layer is set to visible and then
      * the method notifies the store of the change.
      * @param {*} layer
      */
@@ -48,12 +54,11 @@ export class LayersPanel extends Component {
     }
 
     /**
-     * Is called when a vector layer is changed. The vector layer is set to visible and then
+     * This is called when a vector layer is changed. The vector layer is set to visible and then
      * the method notifies the store of the change.
      * @param {*} layer
      */
     onVectorChange(layer) {
-        console.log("je passe");
         const indexVector = store
             .getVectors()
             .findIndex((vector) => vector.name === layer.name);
@@ -67,7 +72,7 @@ export class LayersPanel extends Component {
     }
 
     /**
-     * Returns wether the layer is visible or not.
+     * Returns whether the layer is visible or not.
      * @param {*} layer
      * @returns
      */
@@ -77,4 +82,7 @@ export class LayersPanel extends Component {
 }
 
 LayersPanel.template = "base_geoengine.LayersPanel";
+LayersPanel.props = {
+    model: {type: String, optional: false},
+};
 LayersPanel.components = {CheckBox};

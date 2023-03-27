@@ -1,5 +1,6 @@
 # Copyright 2011-2012 Nicolas Bessi (Camptocamp SA)
 # Copyright 2016 Yannick Payot (Camptocamp SA)
+# Copyright 2023 ACSONE SA/NV
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 from odoo import api, fields, models
 
@@ -33,18 +34,26 @@ class GeoRasterLayer(models.Model):
 
     # technical field to display or not wmts options
     is_wmts = fields.Boolean(compute="_compute_is_wmts")
+    # technical field to display or not wms options
+    is_wms = fields.Boolean(compute="_compute_is_wms")
     # wmts options
-    matrix_set = fields.Char("matrixSet")
-    format_suffix = fields.Char("formatSuffix", help="eg. png")
-    request_encoding = fields.Char("requestEncoding", help="eg. REST")
-    projection = fields.Char("projection", help="eg. EPSG:21781")
-    units = fields.Char(help="eg. m")
-    resolutions = fields.Char("resolutions")
-    max_extent = fields.Char("max_extent")
-    dimensions = fields.Char("dimensions", help="List of dimensions separated by ','")
-    params = fields.Char("params", help="Dictiorary of values for dimensions as JSON")
+    matrix_set = fields.Char("Matrix set")
+    format_suffix = fields.Char("Format", help="eg. png")
+    request_encoding = fields.Char("Request encoding", help="eg. REST")
+    projection = fields.Char(help="eg. EPSG:21781")
+    units = fields.Char(help="eg. m")  # Not used
+    resolutions = fields.Char()
+    max_extent = fields.Char("Max extent")
+    dimensions = fields.Char(help="List of dimensions separated by ','")
+    params = fields.Char(help="Dictiorary of values for dimensions as JSON")
 
-    # technical field to display or not layer type
+    # wms options
+    params_wms = fields.Char("Params", help="Need to provide at least a LAYERS param")
+    server_type = fields.Char(
+        help="The type of the remote WMS server: mapserver, geoserver, carmentaserver, or qgis",
+    )
+
+    # technical field to display or not layer type -- Not used
     has_type = fields.Boolean(compute="_compute_has_type")
     type_id = fields.Many2one(
         "geoengine.raster.layer.type", "Layer", domain="[('service', '=', raster_type)]"
@@ -71,6 +80,11 @@ class GeoRasterLayer(models.Model):
     def _compute_is_wmts(self):
         for rec in self:
             rec.is_wmts = rec.raster_type == "wmts"
+
+    @api.depends("raster_type")
+    def _compute_is_wms(self):
+        for rec in self:
+            rec.is_wms = rec.raster_type == "d_wms"
 
     @api.onchange("raster_type")
     def onchange_set_wmts_options(self):

@@ -1,5 +1,6 @@
 # Copyright 2011-2012 Nicolas Bessi (Camptocamp SA)
 # Copyright 2016 Yannick Payot (Camptocamp SA)
+# Copyright 2023 ACSONE SA/NV
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import logging
 
@@ -7,7 +8,7 @@ from odoo import _, api, models
 from odoo.exceptions import MissingError, UserError
 from odoo.osv.expression import AND
 
-from . import fields as geo_fields
+from .. import fields as geo_fields
 
 DEFAULT_EXTENT = (
     "-123164.85222423, 5574694.9538936, " "1578017.6490538, 6186191.1800898"
@@ -16,7 +17,7 @@ DEFAULT_EXTENT = (
 _logger = logging.getLogger(__name__)
 
 
-class GeoModel(models.AbstractModel):
+class Base(models.AbstractModel):
     """Extend Base class for to allow definition of geo fields."""
 
     _inherit = "base"
@@ -89,20 +90,15 @@ class GeoModel(models.AbstractModel):
             geoengine_layers["backgrounds"].append(layer_dict)
         for layer in view.vector_layer_ids:
             layer_dict = layer.read()[0]
-            # get category groups for this vector layer
-            if layer.geo_repr == "basic" and layer.symbol_ids:
-                layer_dict["symbols"] = layer.symbol_ids.read(
-                    ["img", "fieldname", "value"]
-                )
             layer_dict["attribute_field_id"] = set_field_real_name(
                 layer_dict.get("attribute_field_id", False)
             )
             layer_dict["geo_field_id"] = set_field_real_name(
                 layer_dict.get("geo_field_id", False)
             )
+            layer_dict["model"] = layer.model_id.model
+            layer_dict["model_domain"] = layer.model_domain
             geoengine_layers["actives"].append(layer_dict)
-            # adding geo column desc
-            # layer_dict["geo_field_id"][1]
         return geoengine_layers
 
     @api.model

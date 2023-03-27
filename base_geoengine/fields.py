@@ -1,5 +1,6 @@
 # Copyright 2011-2012 Nicolas Bessi (Camptocamp SA)
 # Copyright 2016 Yannick Payot (Camptocamp SA)
+# Copyright 2023 ACSONE SA/NV
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import json
 import logging
@@ -8,8 +9,8 @@ from operator import attrgetter
 from odoo import _, fields
 from odoo.tools import sql
 
+from . import geo_convertion_helper as convert
 from .geo_db import create_geo_column
-from .geo_helper import geo_convertion_helper as convert
 
 logger = logging.getLogger(__name__)
 try:

@@ -1,16 +1,24 @@
 /** @odoo-module */
+
+/**
+ * Copyright 2023 ACSONE SA/NV
+ */
+
 import {loadCSS, loadJS, templates} from "@web/core/assets";
 import {GeoengineRecord} from "../geoengine_record/geoengine_record.esm";
 import {LayersPanel} from "../layers_panel/layers_panel.esm";
 import {store} from "../../../store.esm";
+import {useService} from "@web/core/utils/hooks";
+import {registry} from "@web/core/registry";
+import {RelationalModel} from "@web/views/relational_model";
+import pyUtils from "web.py_utils";
+
 const {Component, onWillStart, onMounted, onRendered, reactive, mount} = owl;
 
 /* CONSTANTS */
 const DEFAULT_BEGIN_COLOR = "#FFFFFF";
 const DEFAULT_END_COLOR = "#000000";
-// For prop symbols only
 const DEFAULT_MIN_SIZE = 5;
-// For prop symbols only
 const DEFAULT_MAX_SIZE = 15;
 // For choroplets only
 const DEFAULT_NUM_CLASSES = 5;
@@ -21,10 +29,22 @@ export class GeoengineRenderer extends Component {
 
         // When a change is issued in the store the onLayerChanged method is called.
         this.store = reactive(store, () => this.onLayerChanged());
+        this.orm = useService("orm");
+        this.view = useService("view");
+
+        // For related model we need to load all the service needed by RelationalModel
+        this.services = {};
+        for (const key of RelationalModel.services) {
+            this.services[key] = useService(key);
+        }
+
+        this.cfg_models = [];
+
+        // Load all js and css files
 
         onWillStart(() => Promise.all([this.loadJsFiles(), this.loadCssFiles()]));
 
-        onMounted(async () => {
+        onMounted(() => {
             // Retrives all vector layers in the store.
             this.geometryFields = this.store
                 .getVectors()
@@ -82,7 +102,10 @@ export class GeoengineRenderer extends Component {
             this.registerInteraction();
         }
     }
-
+    /**
+     * Create the info-box overlay that can be displayed over the map and
+     * attached to a single map location.
+     */
     createOverlay() {
         this.overlay = new ol.Overlay({
             element: document.getElementById("popup"),
@@ -95,30 +118,105 @@ export class GeoengineRenderer extends Component {
     }
 
     createBackgroundLayers(backgrounds) {
+        const source = [];
+        source.push(new ol.layer.Tile({source: new ol.source.OSM()}));
         const backgroundLayers = backgrounds.map((background) => {
-            if (background.raster_type === "osm") {
-                return new ol.layer.Tile({
-                    title: background.name,
-                    visible: !background.overlay,
-                    type: "base",
-                    source: new ol.source.OSM(),
-                });
+            switch (background.raster_type) {
+                case "osm":
+                    return new ol.layer.Tile({
+                        title: background.name,
+                        visible: !background.overlay,
+                        type: "base",
+                        source: new ol.source.OSM(),
+                    });
+                case "wmts":
+                    const tilegrid_opt = {};
+                    const source_opt = {
+                        layer: background.name,
+                        matrixSet: background.matrix_set,
+                    };
+                    const layer_opt = {
+                        title: background.name,
+                        visible: !background.overlay,
+                        type: "base",
+                        style: "default",
+                    };
+                    const urls_wmts = background.url.split(",");
+                    if (urls_wmts.length > 1) {
+                        source_opt.urls = urls_wmts;
+                    } else {
+                        source_opt.url = urls_wmts[0];
+                    }
+                    if (background.format_suffix) {
+                        source_opt.format = background.format_suffix;
+                    }
+                    if (background.request_encoding) {
+                        source_opt.request_encoding = background.request_encoding;
+                    }
+                    if (background.projection) {
+                        source_opt.projection = ol.proj.get(background.projection);
+                        if (source_opt.projection) {
+                            const projectionExtent = source_opt.projection.getExtent();
+                            tilegrid_opt.origin =
+                                ol.extent.getTopLeft(projectionExtent);
+                        }
+                    }
+                    if (background.resolutions) {
+                        tilegrid_opt.resolutions = background.resolutions
+                            .split(",")
+                            .map(Number);
+                        const nbRes = tilegrid_opt.resolutions.length;
+                        const matrixIds = new Array(nbRes);
+                        for (let i = 0; i < nbRes; i++) {
+                            matrixIds[i] = i;
+                        }
+                        tilegrid_opt.matrixIds = matrixIds;
+                    }
+                    if (background.max_extent) {
+                        const extent = background.max_extent.split(",").map(Number);
+                        layer_opt.extent = extent;
+                        tilegrid_opt.extent = extent;
+                    }
+                    if (background.params) {
+                        source_opt.dimensions = JSON.parse(background.params);
+                    }
+                    source_opt.tileGrid = new ol.tilegrid.WMTS(tilegrid_opt);
+                    layer_opt.source = new ol.source.WMTS(source_opt);
+                    return new ol.layer.Tile(layer_opt);
+                case "d_wms":
+                    const source_opt_wms = {
+                        params: JSON.parse(background.params_wms),
+                        serverType: background.server_type,
+                    };
+                    const urls = background.url.split(",");
+                    if (urls.length > 1) {
+                        source_opt_wms.urls = urls;
+                    } else {
+                        source_opt_wms.url = urls[0];
+                    }
+                    return new ol.layer.Tile({
+                        title: background.name,
+                        visible: !background.overlay,
+                        source: new ol.source.TileWMS(source_opt_wms),
+                    });
+                default:
+                    return undefined;
             }
-            return undefined;
         });
-        // Pour le moment pour que ça marche car je prend pas en compte toute les types.
-        const index = backgroundLayers.findIndex((layer) => layer === undefined);
-        if (index !== -1) {
-            backgroundLayers.splice(index, 1);
-        }
-        return backgroundLayers;
+        return source.concat(backgroundLayers);
     }
 
+    /**
+     * Add 'ScaleLine' control.
+     */
     setupControls() {
         const scaleLine = new ol.control.ScaleLine();
         this.map.addControl(scaleLine);
     }
-
+    /**
+     * Add 2 interactions. The first is for the hovering of the elements.
+     * The second is for the click on the feature.
+     */
     registerInteraction() {
         var selectPointerMove = new ol.interaction.Select({
             condition: ol.events.condition.pointerMove,
@@ -129,7 +227,6 @@ export class GeoengineRenderer extends Component {
             style: this.selectStyle,
         });
         this.selectClick.on("select", (e) => {
-            console.log(e);
             const features = e.target.getFeatures();
             this.updateInfoBox(features);
         });
@@ -137,43 +234,11 @@ export class GeoengineRenderer extends Component {
         this.map.addInteraction(selectPointerMove);
     }
 
-    updateInfoBox(features) {
-        const feature = features.item(0);
-        if (feature !== undefined) {
-            const popup = document.getElementById("popup-content");
-            if (popup.firstChild !== null) {
-                popup.removeChild(popup.firstChild);
-            }
-            if (feature !== undefined) {
-                var attributes = feature.get("attributes");
-                this.record = this.props.data.records.find(
-                    (record) => record._values.id === attributes.id
-                );
-                var coord = ol.extent.getCenter(feature.getGeometry().getExtent());
-                this.overlay.setPosition(coord);
-                mount(GeoengineRecord, popup, {
-                    env: this.env,
-                    props: {
-                        archInfo: this.props.archInfo,
-                        record: this.record,
-                        templates: this.props.archInfo.templateDocs,
-                    },
-                    templates,
-                });
-            }
-        } else {
-            this.hidePopup();
-        }
-    }
-
-    clickToHidePopup() {
-        this.selectClick.getFeatures().clear();
-        this.hidePopup();
-    }
-    hidePopup() {
-        this.overlay.setPosition(undefined);
-    }
-
+    /**
+     * This is the style that is set when selecting or clicking on a feature.
+     * @param {*} feature
+     * @returns style
+     */
     selectStyle(feature) {
         var geometryType = feature.getGeometry().getType();
         switch (geometryType) {
@@ -199,11 +264,93 @@ export class GeoengineRenderer extends Component {
                 });
         }
     }
+    /**
+     * Allow you to display the info box on the map.
+     * @param {*} features
+     */
+    updateInfoBox(features) {
+        const feature = features.item(0);
+        if (feature !== undefined) {
+            const popup = document.getElementById("popup-content");
+            if (popup.firstChild !== null) {
+                popup.removeChild(popup.firstChild);
+            }
+            if (feature !== undefined) {
+                var attributes = feature.get("attributes");
 
-    onInfoBoxClicked() {
-        this.props.openRecord(this.record);
+                if (this.cfg_models.includes(feature.get("model"))) {
+                    this.mountGeoengineRecord(
+                        popup,
+                        this.archInfo,
+                        this.archInfo.templateDocs,
+                        this.model.root,
+                        attributes
+                    );
+                } else {
+                    this.mountGeoengineRecord(
+                        popup,
+                        this.props.archInfo,
+                        this.props.archInfo.templateDocs,
+                        this.props.data,
+                        attributes
+                    );
+                }
+
+                var coord = ol.extent.getCenter(feature.getGeometry().getExtent());
+                this.overlay.setPosition(coord);
+            }
+        } else {
+            this.hidePopup();
+        }
     }
 
+    /**
+     * Allow you to mount geoengine record. This displays the record in the info box template.
+     * @param {*} popup
+     * @param {*} archInfo
+     * @param {*} templateDocs
+     * @param {*} model
+     * @param {*} attributes
+     */
+    mountGeoengineRecord(popup, archInfo, templateDocs, model, attributes) {
+        this.record = model.records.find(
+            (record) => record._values.id === attributes.id
+        );
+        mount(GeoengineRecord, popup, {
+            env: this.env,
+            props: {
+                archInfo,
+                record: this.record,
+                templates: templateDocs,
+            },
+            templates,
+        });
+    }
+
+    /**
+     * Allow you to hide the popup by clicking on the cross.
+     */
+    clickToHidePopup() {
+        this.selectClick.getFeatures().clear();
+        this.hidePopup();
+    }
+
+    hidePopup() {
+        this.overlay.setPosition(undefined);
+    }
+
+    /**
+     * When you click on the arrow button, it calls the controller's
+     * openRecord method.
+     */
+    onInfoBoxClicked() {
+        this.props.openRecord(this.record.resModel, this.record.resId);
+    }
+
+    /**
+     * Allows you to change the visibility of layers. This method is called
+     * when the user changes layers.
+     */
     onLayerChanged() {
         this.map
             .getLayers()
@@ -234,19 +381,20 @@ export class GeoengineRenderer extends Component {
             });
     }
 
-    renderVectorLayers() {
+    async renderVectorLayers() {
         const data = this.props.data.records;
         this.map.getLayers().forEach((layer) => {
             if (layer.get("title") === "Overlays") {
                 this.map.removeLayer(layer);
             }
         });
-        const vectorLayers = this.createVectorLayers(data);
+        const vectorLayers = await this.createVectorLayers(data);
+        const result = await Promise.all(vectorLayers);
         this.overlaysGroup = new ol.layer.Group({
             title: "Overlays",
-            layers: vectorLayers,
+            layers: result,
         });
-        vectorLayers.forEach((vlayer) => {
+        result.forEach((vlayer) => {
             this.store.getVectors().forEach((vector) => {
                 if (vlayer.values_.title === vector.name) {
                     vlayer.setVisible(vector.isVisible);
@@ -255,8 +403,20 @@ export class GeoengineRenderer extends Component {
         });
         this.map.addLayer(this.overlaysGroup);
 
+        this.updateZoom(data, result);
+    }
+
+    /**
+     * Adapts the zoom according to the result obtained.
+     * @param {*} data
+     * @param {*} result
+     */
+    updateZoom(data, result) {
         if (data.length) {
-            var extent = vectorLayers[0].getSource().getExtent();
+            var extent = result
+                .find((res) => res.values_.visible === true)
+                .getSource()
+                .getExtent();
             var infinite_extent = [Infinity, Infinity, -Infinity, -Infinity];
             if (extent !== infinite_extent) {
                 var map_view = this.map.getView();
@@ -273,26 +433,138 @@ export class GeoengineRenderer extends Component {
             .map((layer) => this.createVectorLayer(layer, data));
     }
 
-    createVectorLayer(cfg, data) {
+    async createVectorLayer(cfg, data) {
         if (!data.length) {
             return new ol.layer.Vector({
                 source: new ol.source.Vector(),
                 title: cfg.name,
             });
         }
+        const styleInfo = this.styleVectorLayer(cfg, data);
+        var lv = new ol.layer.Vector({
+            title: cfg.name,
+            active_on_startup: cfg.active_on_startup,
+            style: styleInfo.style,
+        });
+        // If we want to use an other model in the layer
+        if (cfg.model) {
+            await this.useRelatedModel(cfg, lv);
+        } else {
+            this.addSourceToLayer(data, cfg, lv);
+        }
+        if (cfg.layer_opacity) {
+            lv.setOpacity(cfg.layer_opacity);
+        }
+        lv.setZIndex(cfg.sequence);
+        return lv;
+    }
 
+    /**
+     * This method is called when a layer uses another model.
+     * @param {*} cfg
+     * @param {*} lv
+     */
+    async useRelatedModel(cfg, lv) {
+        this.cfg_models.push(cfg.model);
+        const fields_to_read = [cfg.geo_field_id[1]];
+        if (cfg.attribute_field_id) {
+            fields_to_read.push(cfg.attribute_field_id[1]);
+        }
+        const domain = this.evalModelDomain(cfg);
+        await this.loadView(cfg, domain);
+        this.orm.searchRead(cfg.model, [domain][0], fields_to_read).then((res) => {
+            this.addSourceToLayer(res, cfg, lv);
+        });
+    }
+
+    /**
+     * Set source to the given layer.
+     * @param {*} res
+     * @param {*} cfg
+     * @param {*} lv
+     */
+    addSourceToLayer(res, cfg, lv) {
         this.vectorSource = new ol.source.Vector();
+        this.addFeatureToSource(res, cfg);
+        lv.setSource(this.vectorSource);
+    }
+
+    /**
+     * Evaluates the domain passed to the layer model.
+     * @param {*} cfg
+     * @returns {Array}
+     */
+    evalModelDomain(cfg) {
+        let domain = [];
+        // We can put active_ids in our domain to get all ids of all the
+        // element displayed.
+        if (cfg.model_domain.includes("active_ids")) {
+            domain = pyUtils.py_eval(cfg.model_domain, {
+                active_ids: this.props.data.records.map(
+                    (datapoint) => `${datapoint.resId}`
+                ),
+            });
+        } else {
+            domain = pyUtils.py_eval(cfg.model_domain);
+        }
+        return domain;
+    }
+    /**
+     * Loads the view of the model that is passed to the layer.
+     * @param {*} cfg
+     * @param {*} domain
+     */
+    async loadView(cfg, domain) {
+        const viewRegistry = registry.category("views");
+        const fields = await this.view.loadFields(cfg.model, {
+            attributes: [
+                "store",
+                "searchable",
+                "type",
+                "string",
+                "relation",
+                "selection",
+                "related",
+            ],
+        });
+        const {relatedModels, views} = await this.view.loadViews({
+            resModel: cfg.model,
+            views: [[false, "geoengine"]],
+        });
+        const {ArchParser, Model} = viewRegistry.get("geoengine");
+        this.archInfo = new ArchParser().parse(
+            views.geoengine.arch,
+            relatedModels,
+            cfg.model
+        );
+        const searchParams = {
+            activeFields: this.archInfo.activeFields,
+            resModel: cfg.model,
+            fields: fields,
+        };
+        this.model = new Model(this.env, searchParams, this.services);
+        await this.model.load({domain});
+    }
+
+    addFeatureToSource(data, cfg) {
         data.forEach((item) => {
-            var attributes = _.clone(item._values);
+            var attributes =
+                item._values === undefined ? _.clone(item) : _.clone(item._values);
             this.geometryFields.forEach((geo_field) => delete attributes[geo_field]);
 
             if (cfg.display_polygon_labels === true) {
-                attributes.label = item._values[cfg.attribute_field_id[1]];
+                attributes.label =
+                    item._values === undefined
+                        ? item[cfg.attribute_field_id[1]]
+                        : item._values[cfg.attribute_field_id[1]];
             } else {
                 attributes.label = "";
             }
 
-            const json_geometry = item._values[cfg.geo_field_id[1]];
+            const json_geometry =
+                item._values === undefined
+                    ? item[cfg.geo_field_id[1]]
+                    : item._values[cfg.geo_field_id[1]];            const featureSrid = this.map.getView().getProjection()
             const featureSrid = this.map.getView().getProjection()
             if (json_geometry) {
                 var format = new ol.format.GeoJSON({
@@ -307,18 +579,6 @@ export class GeoengineRenderer extends Component {
                 this.vectorSource.addFeature(feature);
             }
         });
-        const styleInfo = this.styleVectorLayer(cfg, data);
-        var lv = new ol.layer.Vector({
-            source: this.vectorSource,
-            title: cfg.name,
-            active_on_startup: cfg.active_on_startup,
-            style: styleInfo.style,
-        });
-        this.vectorSources.push(this.vectorSource);
-        if (cfg.layer_opacity) {
-            lv.setOpacity(cfg.layer_opacity);
-        }
-        return lv;
     }
 
     styleVectorLayer(cfg, data) {
@@ -341,6 +601,8 @@ export class GeoengineRenderer extends Component {
         var end_color_hex = cfg.end_color || DEFAULT_END_COLOR;
         var begin_color = chroma(begin_color_hex).alpha(opacity).css();
         var end_color = chroma(end_color_hex).alpha(opacity).css();
+        // Function that maps numeric values to a color palette.
+        // This scale function is only used when geo_repr is basic
         var scale = chroma.scale([begin_color, end_color]);
         var serie = new geostats(values);
         var vals = null;
@@ -348,6 +610,7 @@ export class GeoengineRenderer extends Component {
             case "unique":
             case "custom":
                 vals = serie.getClassUniqueValues();
+                // "RdYlBu" is a set of colors
                 scale = chroma.scale("RdYlBu").domain([0, vals.length], vals.length);
                 break;
             case "quantile":
@@ -476,7 +739,7 @@ export class GeoengineRenderer extends Component {
     }
 
     /**
-     * Create feature style based on the color table.
+     * Create a feature style based on the color table.
      * @param {*} colors
      * @returns
      */
@@ -515,7 +778,12 @@ export class GeoengineRenderer extends Component {
         });
         return {fill, stroke};
     }
-
+    /**
+     * Allows you to find the index of the color to be used according to its value.
+     * @param {*} val
+     * @param {*} a
+     * @returns {Number}
+     */
     getClass(val, a) {
         // Classification uniqueValues
         var idx = a.indexOf(val);
@@ -542,7 +810,7 @@ export class GeoengineRenderer extends Component {
      * Extracts the values of the field corresponding to the attribute field.
      * @param {*} cfg, the layer.
      * @param {*} data, all of the records
-     * @returns
+     * @returns {Array}
      */
     extractLayerValues(cfg, data) {
         var indicator = cfg.attribute_field_id[1];
@@ -551,4 +819,9 @@ export class GeoengineRenderer extends Component {
 }
 
 GeoengineRenderer.template = "base_geoengine.GeoengineRenderer";
+GeoengineRenderer.props = {
+    archInfo: {type: Object, optional: false},
+    data: {type: Object, optional: false},
+    openRecord: {type: Function, optional: false},
+};
 GeoengineRenderer.components = {LayersPanel, GeoengineRecord};

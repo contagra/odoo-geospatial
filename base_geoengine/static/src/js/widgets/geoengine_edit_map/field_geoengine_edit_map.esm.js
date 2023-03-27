@@ -1,8 +1,13 @@
 /** @odoo-module **/
 
+/**
+ * Copyright 2023 ACSONE SA/NV
+ */
+
 import {loadJS} from "@web/core/assets";
 import {registry} from "@web/core/registry";
 import {useService} from "@web/core/utils/hooks";
+import {standardFieldProps} from "@web/views/fields/standard_field_props";
 
 const {Component, onWillStart, onMounted, onRendered} = owl;
 
@@ -14,9 +19,7 @@ export class FieldGeoEngineEditMap extends Component {
         this.id = `map_${Date.now()}`;
         this.orm = useService("orm");
 
-        onWillStart(async () => {
-            return loadJS(["/base_geoengine/static/lib/ol-7.2.2/ol.js"]);
-        });
+        onWillStart(() => Promise.all([this.loadJsFiles()]));
 
         // Is executed when component is mounted.
         onMounted(async () => {
@@ -41,36 +44,48 @@ export class FieldGeoEngineEditMap extends Component {
         });
     }
 
+    async loadJsFiles() {
+        const files = [
+            "/base_geoengine/static/lib/ol-7.2.2/ol.js",
+            "/base_geoengine/static/lib/chromajs-2.4.2/chroma.js",
+        ];
+        for (const file of files) {
+            await loadJS(file);
+        }
+    }
+
     /**
      * Displays geo data on the map using the collection of features.
      */
     createVectorLayer() {
         this.features = new ol.Collection();
         this.source = new ol.source.Vector({features: this.features});
+        const colorHex = this.props.color !== undefined ? this.props.color : "#ee9900";
+        const opacity = this.props.opacity !== undefined ? this.props.opacity : 1;
+        const color = chroma(colorHex).alpha(opacity).css();
+        const fill = new ol.style.Fill({
+            color: color,
+        });
+        const stroke = new ol.style.Stroke({
+            color,
+            width: 2,
+        });
         return new ol.layer.Vector({
             source: this.source,
             style: new ol.style.Style({
-                fill: new ol.style.Fill({
-                    color: "#ee9900",
-                    opacity: 0.7,
-                }),
-                stroke: new ol.style.Stroke({
-                    color: "#ee9900",
-                    width: 3,
-                    opacity: 1,
-                }),
+                fill,
+                stroke,
                 image: new ol.style.Circle({
-                    radius: 7,
-                    fill: new ol.style.Fill({
-                        color: "#ffcc33",
-                    }),
+                    radius: 5,
+                    fill,
+                    stroke,
                 }),
             }),
         });
     }
 
     /**
-     * Call the method that create the layer to display the geo data on the map.
+     * Call the method that creates the layer to display the geo data on the map.
      */
     createLayers() {
         this.vectorLayer = this.createVectorLayer();
@@ -78,6 +93,7 @@ export class FieldGeoEngineEditMap extends Component {
 
     /**
      * Allows you to centre the area defined for the user.
+     * If there is an item to display.
      */
     updateMapZoom() {
         if (this.source) {
@@ -93,7 +109,8 @@ export class FieldGeoEngineEditMap extends Component {
     }
 
     /**
-     * Is executed after component is rendered.
+     * Allows you to centre the area defined for the user.
+     * If there is not item to display.
      */
     updateMapEmpty() {
         var map_view = this.map.getView();
@@ -108,12 +125,11 @@ export class FieldGeoEngineEditMap extends Component {
      * Based on the value passed in props, adds a new feature to the collection.
      * @param {*} value
      */
-
     setValue(value) {
         if (this.map) {
             /**
-             * If the value to be displayed is equal to the one passed in props do nothing
-             * otherwise clear the map and displaye the new value.
+             * If the value to be displayed is equal to the one passed in props, do nothing
+             * otherwise clear the map and display the new value.
              */
             if (this.displayValue == value) return;
             this.displayValue = value;
@@ -133,8 +149,8 @@ export class FieldGeoEngineEditMap extends Component {
     }
 
     /**
-     * Is triggered when the view changed. When we have finished drawing our geo data or when we clear
-     * the map.
+     * This is triggered when the view changed. When we have finished drawing our geo data, or
+     * when we clear the map.
      */
     onUIChange() {
         var value = null;
@@ -167,7 +183,7 @@ export class FieldGeoEngineEditMap extends Component {
     }
 
     /**
-     * Create the trash button that clear the map.
+     * Create the trash button that clears the map.
      * @returns the div in which the button is located.
      */
     createTrashControl() {
@@ -185,7 +201,7 @@ export class FieldGeoEngineEditMap extends Component {
     }
 
     /**
-     * Displays the map in the div provided
+     * Displays the map in the div provided.
      */
     renderMap() {
         this.map = new ol.Map({
@@ -205,11 +221,25 @@ export class FieldGeoEngineEditMap extends Component {
             internalProjection: this.map.getView().getProjection(),
             externalProjection: "EPSG:" + this.srid,
         });
-        this.setupControls();
+        if (!this.props.readonly) {
+            this.setupControls();
+        }
     }
 }
 
 FieldGeoEngineEditMap.template = "base_geoengine.FieldGeoEngineEditMap";
+FieldGeoEngineEditMap.props = {
+    ...standardFieldProps,
+    opacity: {type: Number, optional: true},
+    color: {type: String, optional: true},
+};
+
+FieldGeoEngineEditMap.extractProps = ({attrs}) => {
+    return {
+        opacity: attrs.options.opacity,
+        color: attrs.options.color,
+    };
+};
 
 export class FieldGeoEngineEditMapMultiPolygon extends FieldGeoEngineEditMap {
     setup() {

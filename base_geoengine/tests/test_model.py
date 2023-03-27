@@ -1,4 +1,4 @@
-import logging
+# Copyright 2023 ACSONE SA/NV
 
 import geojson
 from odoo_test_helper import FakeModelLoader
@@ -8,8 +8,6 @@ from shapely.geometry import shape
 from odoo.tests.common import TransactionCase
 
 from ..fields import GeoPoint
-
-_logger = logging.getLogger(__name__)
 
 
 class TestModel(TransactionCase):
