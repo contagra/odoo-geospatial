@@ -102,6 +102,7 @@ export class GeoengineRenderer extends Component {
             this.registerInteraction();
         }
     }
+
     /**
      * Create the info-box overlay that can be displayed over the map and
      * attached to a single map location.
@@ -213,6 +214,7 @@ export class GeoengineRenderer extends Component {
         const scaleLine = new ol.control.ScaleLine();
         this.map.addControl(scaleLine);
     }
+
     /**
      * Add 2 interactions. The first is for the hovering of the elements.
      * The second is for the click on the feature.
@@ -264,6 +266,7 @@ export class GeoengineRenderer extends Component {
                 });
         }
     }
+
     /**
      * Allow you to display the info box on the map.
      * @param {*} features
@@ -509,6 +512,7 @@ export class GeoengineRenderer extends Component {
         }
         return domain;
     }
+
     /**
      * Loads the view of the model that is passed to the layer.
      * @param {*} cfg
@@ -564,8 +568,8 @@ export class GeoengineRenderer extends Component {
             const json_geometry =
                 item._values === undefined
                     ? item[cfg.geo_field_id[1]]
-                    : item._values[cfg.geo_field_id[1]];            const featureSrid = this.map.getView().getProjection()
-            const featureSrid = this.map.getView().getProjection()
+                    : item._values[cfg.geo_field_id[1]];
+            const featureSrid = this.map.getView().getProjection();
             if (json_geometry) {
                 var format = new ol.format.GeoJSON({
                     featureProjection: featureSrid,
@@ -725,6 +729,7 @@ export class GeoengineRenderer extends Component {
             },
         };
     }
+
     createStyleText() {
         return new ol.style.Text({
             text: "",
@@ -778,6 +783,7 @@ export class GeoengineRenderer extends Component {
         });
         return {fill, stroke};
     }
+
     /**
      * Allows you to find the index of the color to be used according to its value.
      * @param {*} val
