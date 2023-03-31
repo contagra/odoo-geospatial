@@ -23,7 +23,7 @@ Geospatial support for base_geolocalize
     :target: https://runbot.odoo-community.org/runbot/115/13.0
     :alt: Try me on Runbot
 
-|badge1| |badge2| |badge3| |badge4| |badge5| 
+|badge1| |badge2| |badge3| |badge4| |badge5|
 
 Geolocalise your partner based on longitude and latitude provided by
 `OpenStreetMap via its Nominatim service
