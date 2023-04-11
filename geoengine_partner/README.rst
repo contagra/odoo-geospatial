@@ -25,6 +25,8 @@ Geospatial support of partners
 
 |badge1| |badge2| |badge3| |badge4| |badge5|
 
+This is a drop in replacement for the OCA module
+
 This module allow to geolocalise your partner.
 
 **Table of contents**

@@ -44,7 +44,7 @@ class ResPartner(models.Model):
         search engine from "openstreetmap". See:
         https://nominatim.org/release-docs/latest/api/Overview/
         """
-        url = "http://nominatim.openstreetmap.org/search"
+        url = "https://nominatim.openstreetmap.org/search"
         headers = {"User-Agent": "Odoobot/16.0.1.0.0 (OCA-geospatial)"}
 
         for partner in self:
