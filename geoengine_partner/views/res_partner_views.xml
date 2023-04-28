@@ -19,6 +19,8 @@
 
     <record id="res_partner_view_geoengine" model="ir.ui.view">
         <field name="name">res.partner.view.geoengine</field>
+        <field eval="16" name="priority"/>
+        <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <geoengine>
                 <field name="name" select="1"/>
@@ -59,8 +61,13 @@
                 </templates>
             </geoengine>
         </field>
-        <field eval="16" name="priority"/>
-        <field name="model">res.partner</field>
+    </record>
+
+    <record id="action_partner_form_geoengine" model="ir.actions.act_window.view">
+        <field name="view_mode">geoengine</field>
+        <field name="sequence">20</field>
+        <field name="view_id" ref="res_partner_view_geoengine"/>
+        <field name="act_window_id" ref="base.action_partner_form"/>
     </record>
 
     <record id="res_partner_view_geoengine_vector" model="geoengine.vector.layer">
@@ -77,14 +84,14 @@
         <field name="active_on_startup">True</field>
     </record>
 
-<!--
-    <record id="res_partner_view_geoengine_vector_raster_osm" model="geoengine.raster.layer">
-        <field name="raster_type">osm</field>
-        <field name="name">OSM</field>
-        <field name="view_id" ref="res_partner_view_geoengine"/>
-        <field eval="0" name="overlay"/>
-    </record>
--->
+    <!--
+        <record id="res_partner_view_geoengine_vector_raster_osm" model="geoengine.raster.layer">
+            <field name="raster_type">osm</field>
+            <field name="name">OSM</field>
+            <field name="view_id" ref="res_partner_view_geoengine"/>
+            <field eval="0" name="overlay"/>
+        </record>
+    -->
 
     <record id="res_partner_view_geoengine_vector_raster_agri" model="geoengine.raster.layer">
         <field name="raster_type">wmts</field>
