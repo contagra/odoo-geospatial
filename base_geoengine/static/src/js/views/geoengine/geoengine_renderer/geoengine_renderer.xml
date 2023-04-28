@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <templates xml:space="preserve">
     <t t-name="base_geoengine.GeoengineRenderer" owl="1">
-        <div class="row view w-100">
+        <div class="d-flex view w-100">
             <LayersPanel model="props.data.resModel" vectorModel="vectorModel.root" />
-            <div class="map_container col">
+            <div class="map_container">
                 <div id="olmap" />
             </div>
+            <RecordsPanel
+                list="props.data"
+                onDisplayPopupRecord.bind="onDisplayPopupRecord"
+                zoomOnFeature.bind="zoomOnFeature"
+                zoomOutOnFeature.bind="updateZoom"
+            />
         </div>
         <div id="popup" class="ol-popup">
             <div
@@ -17,8 +23,8 @@
             <div class="row d-flex justify-content-center">
                 <button
                     t-on-click="onInfoBoxClicked"
-                    class="btn btn-secondary fa o_external_button fa-arrow-right w-50"
-                />
+                    class="btn btn-secondary border w-50"
+                >OPEN</button>
             </div>
         </div>
     </t>

@@ -7,6 +7,7 @@
 import {loadCSS, loadJS, templates} from "@web/core/assets";
 import {GeoengineRecord} from "../geoengine_record/geoengine_record.esm";
 import {LayersPanel} from "../layers_panel/layers_panel.esm";
+import {RecordsPanel} from "../records_panel/records_panel.esm";
 import {rasterLayersStore} from "../../../raster_layers_store.esm";
 import {vectorLayersStore} from "../../../vector_layers_store.esm";
 import {useService} from "@web/core/utils/hooks";
@@ -59,9 +60,9 @@ export class GeoengineRenderer extends Component {
 
         onMounted(() => {
             // Retrives all vector layers in the store.
-            this.geometryFields = this.vectorLayersStore
-                .getVectors()
-                .map((layer) => layer.geo_field_id[1]);
+            this.geometryFields = this.vectorLayersStore.vectorsLayers.map(
+                (layer) => layer.geo_field_id[1]
+            );
 
             this.vectorSources = [];
             this.renderMap();
@@ -107,7 +108,7 @@ export class GeoengineRenderer extends Component {
                     new ol.layer.Group({
                         title: "Base maps",
                         layers: this.createBackgroundLayers(
-                            this.rasterLayersStore.getRasters()
+                            this.rasterLayersStore.rastersLayers
                         ),
                     }),
                 ],
@@ -305,29 +306,26 @@ export class GeoengineRenderer extends Component {
     updateInfoBox(features) {
         const feature = features.item(0);
         if (feature !== undefined) {
-            const popup = document.getElementById("popup-content");
-            if (popup.firstChild !== null) {
-                popup.removeChild(popup.firstChild);
-            }
+            const popup = this.getPopup();
             if (feature !== undefined) {
                 var attributes = feature.get("attributes");
 
                 if (this.cfg_models.includes(feature.get("model"))) {
-                    this.mountGeoengineRecord(
+                    this.mountGeoengineRecord({
                         popup,
-                        this.archInfo,
-                        this.archInfo.templateDocs,
-                        this.model.root,
-                        attributes
-                    );
+                        archInfo: this.archInfo,
+                        templateDocs: this.archInfo.templateDocs,
+                        model: this.model.root,
+                        attributes,
+                    });
                 } else {
-                    this.mountGeoengineRecord(
+                    this.mountGeoengineRecord({
                         popup,
-                        this.props.archInfo,
-                        this.props.archInfo.templateDocs,
-                        this.props.data,
-                        attributes
-                    );
+                        archInfo: this.props.archInfo,
+                        templateDocs: this.props.archInfo.templateDocs,
+                        model: this.props.data,
+                        attributes,
+                    });
                 }
 
                 var coord = ol.extent.getCenter(feature.getGeometry().getExtent());
@@ -338,6 +336,14 @@ export class GeoengineRenderer extends Component {
         }
     }
 
+    getPopup() {
+        const popup = document.getElementById("popup-content");
+        if (popup.firstChild !== null) {
+            popup.removeChild(popup.firstChild);
+        }
+        return popup;
+    }
+
     /**
      * Allow you to mount geoengine record. This displays the record in the info box template.
      * @param {*} popup
@@ -345,11 +351,13 @@ export class GeoengineRenderer extends Component {
      * @param {*} templateDocs
      * @param {*} model
      * @param {*} attributes
+     * @param {*} record
      */
-    mountGeoengineRecord(popup, archInfo, templateDocs, model, attributes) {
-        this.record = model.records.find(
-            (record) => record._values.id === attributes.id
-        );
+    mountGeoengineRecord({popup, archInfo, templateDocs, model, attributes, record}) {
+        this.record =
+            record === undefined
+                ? model.records.find((record) => record._values.id === attributes.id)
+                : record;
         mount(GeoengineRecord, popup, {
             env: this.env,
             props: {
@@ -359,6 +367,40 @@ export class GeoengineRenderer extends Component {
             },
             templates,
         });
+    }
+
+    /**
+     * When you click on a record in the RecordsPanel, this method is called to display the popup.
+     * @param {*} record
+     */
+    onDisplayPopupRecord(record) {
+        const popup = this.getPopup();
+        const feature = this.vectorSource.getFeatureById(record.resId);
+        if (feature !== undefined) {
+            this.mountGeoengineRecord({
+                popup,
+                archInfo: this.props.archInfo,
+                templateDocs: this.props.archInfo.templateDocs,
+                record,
+            });
+            var coord = ol.extent.getCenter(feature.getGeometry().getExtent());
+            this.overlay.setPosition(coord);
+            var map_view = this.map.getView();
+            if (map_view) {
+                map_view.animate({
+                    center: feature.getGeometry().getFirstCoordinate(),
+                    duration: 500,
+                });
+            }
+        }
+    }
+
+    zoomOnFeature(record) {
+        const feature = this.vectorSource.getFeatureById(record.resId);
+        var map_view = this.map.getView();
+        if (map_view) {
+            map_view.fit(feature.getGeometry().getExtent(), {maxZoom: 14});
+        }
     }
 
     /**
@@ -393,7 +435,7 @@ export class GeoengineRenderer extends Component {
             .getLayers()
             .getArray()
             .forEach((layer) => {
-                this.rasterLayersStore.getRasters().forEach((raster) => {
+                this.rasterLayersStore.rastersLayers.forEach((raster) => {
                     if (raster.name === layer.get("title")) {
                         layer.setVisible(raster.isVisible);
                     }
@@ -413,12 +455,20 @@ export class GeoengineRenderer extends Component {
             .getLayers()
             .getArray()
             .forEach((layer) => {
-                this.vectorLayersStore.getVectors().forEach(async (vector) => {
+                this.vectorLayersStore.vectorsLayers.forEach(async (vector) => {
                     if (vector.name === layer.get("title")) {
-                        this.onVisibleChanged(vector, layer);
-                        this.onVectorLayerModelDomainChanged(vector, layer);
-                        await this.onLayerChanged(vector, layer);
-                        this.onSequenceChanged(vector, layer);
+                        if (vector.onVisibleChanged) {
+                            this.onVisibleChanged(vector, layer);
+                        }
+                        if (vector.onDomainChanged) {
+                            this.onVectorLayerModelDomainChanged(vector, layer);
+                        }
+                        if (vector.onLayerChanged) {
+                            await this.onLayerChanged(vector, layer);
+                        }
+                        if (vector.onSequenceChanged) {
+                            this.onSequenceChanged(vector, layer);
+                        }
                     }
                 });
             });
@@ -430,9 +480,7 @@ export class GeoengineRenderer extends Component {
      * @param {*} layer
      */
     onSequenceChanged(vector, layer) {
-        if (vector.onSequenceChanged) {
-            layer.setZIndex(vector.sequence);
-        }
+        layer.setZIndex(vector.sequence);
     }
 
     /**
@@ -441,16 +489,14 @@ export class GeoengineRenderer extends Component {
      * @param {*} layer
      */
     async onLayerChanged(vector, layer) {
-        if (vector.onLayerChanged) {
-            layer.setSource(null);
-            const data = this.props.data.records;
-            const styleInfo = this.styleVectorLayer(vector, data);
-            layer.setStyle(styleInfo.style);
-            if (vector.model) {
-                await this.useRelatedModel(vector, layer);
-            } else {
-                this.addSourceToLayer(data, vector, layer);
-            }
+        layer.setSource(null);
+        const data = this.props.data.records;
+        const styleInfo = this.styleVectorLayer(vector, data);
+        layer.setStyle(styleInfo.style);
+        if (vector.model) {
+            await this.useRelatedModel(vector, layer);
+        } else {
+            this.addSourceToLayer(data, vector, layer);
         }
     }
 
@@ -460,9 +506,7 @@ export class GeoengineRenderer extends Component {
      * @param {*} layer
      */
     onVisibleChanged(vector, layer) {
-        if (vector.onVisibleChanged) {
-            layer.setVisible(vector.isVisible);
-        }
+        layer.setVisible(vector.isVisible);
     }
 
     /**
@@ -471,17 +515,17 @@ export class GeoengineRenderer extends Component {
      * @param {*} layer
      */
     onVectorLayerModelDomainChanged(cfg, layer) {
-        if (cfg.onDomainChanged) {
-            layer.setSource(null);
-            const fields_to_read = [cfg.geo_field_id[1]];
-            if (cfg.attribute_field_id) {
-                fields_to_read.push(cfg.attribute_field_id[1]);
-            }
-            const domain = this.evalModelDomain(cfg);
-            this.orm.searchRead(cfg.model, [domain][0], fields_to_read).then((res) => {
-                this.addSourceToLayer(res, cfg, layer);
-            });
+        layer.setSource(null);
+        const fields_to_read = [cfg.geo_field_id[1]];
+        if (cfg.attribute_field_id) {
+            fields_to_read.push(cfg.attribute_field_id[1]);
         }
+        const domain = this.evalModelDomain(cfg);
+        this.orm.searchRead(cfg.model, [domain][0], fields_to_read).then((res) => {
+            const vectorSource = new ol.source.Vector();
+            this.addFeatureToSource(res, cfg, vectorSource);
+            layer.setSource(vectorSource);
+        });
     }
 
     async renderVectorLayers() {
@@ -492,13 +536,13 @@ export class GeoengineRenderer extends Component {
             }
         });
         const vectorLayers = await this.createVectorLayers(data);
-        const result = await Promise.all(vectorLayers);
+        this.vectorLayersResult = await Promise.all(vectorLayers);
         this.overlaysGroup = new ol.layer.Group({
             title: "Overlays",
-            layers: result,
+            layers: this.vectorLayersResult,
         });
-        result.forEach((vlayer) => {
-            this.vectorLayersStore.getVectors().forEach((vector) => {
+        this.vectorLayersResult.forEach((vlayer) => {
+            this.vectorLayersStore.vectorsLayers.forEach((vector) => {
                 if (vlayer.values_.title === vector.name) {
                     vlayer.setVisible(vector.isVisible);
                 }
@@ -506,17 +550,15 @@ export class GeoengineRenderer extends Component {
         });
         this.map.addLayer(this.overlaysGroup);
 
-        this.updateZoom(data, result);
+        this.updateZoom();
     }
 
     /**
      * Adapts the zoom according to the result obtained.
-     * @param {*} data
-     * @param {*} result
      */
-    updateZoom(data, result) {
-        if (data.length) {
-            var extent = result
+    updateZoom() {
+        if (this.props.data.records.length) {
+            var extent = this.vectorLayersResult
                 .find((res) => res.values_.visible === true)
                 .getSource()
                 .getExtent();
@@ -531,9 +573,9 @@ export class GeoengineRenderer extends Component {
     }
 
     createVectorLayers(data) {
-        return this.vectorLayersStore
-            .getVectors()
-            .map((layer) => this.createVectorLayer(layer, data));
+        return this.vectorLayersStore.vectorsLayers.map((layer) =>
+            this.createVectorLayer(layer, data)
+        );
     }
 
     async createVectorLayer(cfg, data) {
@@ -576,7 +618,9 @@ export class GeoengineRenderer extends Component {
         const domain = this.evalModelDomain(cfg);
         await this.loadView(cfg.model, "geoengine");
         this.orm.searchRead(cfg.model, [domain][0], fields_to_read).then((res) => {
-            this.addSourceToLayer(res, cfg, lv);
+            const vectorSource = new ol.source.Vector();
+            this.addFeatureToSource(res, cfg, vectorSource);
+            lv.setSource(vectorSource);
         });
     }
 
@@ -588,7 +632,7 @@ export class GeoengineRenderer extends Component {
      */
     addSourceToLayer(res, cfg, lv) {
         this.vectorSource = new ol.source.Vector();
-        this.addFeatureToSource(res, cfg);
+        this.addFeatureToSource(res, cfg, this.vectorSource);
         lv.setSource(this.vectorSource);
     }
 
@@ -678,7 +722,7 @@ export class GeoengineRenderer extends Component {
         }
     }
 
-    addFeatureToSource(data, cfg) {
+    addFeatureToSource(data, cfg, vectorSource) {
         data.forEach((item) => {
             var attributes =
                 item._values === undefined ? _.clone(item) : _.clone(item._values);
@@ -708,8 +752,9 @@ export class GeoengineRenderer extends Component {
                     geometry: format.readGeometry(json_geometry),
                     attributes: attributes,
                 });
+                feature.setId(item.resId);
 
-                this.vectorSource.addFeature(feature);
+                vectorSource.addFeature(feature);
             }
         });
     }
@@ -959,4 +1004,4 @@ GeoengineRenderer.props = {
     data: {type: Object, optional: false},
     openRecord: {type: Function, optional: false},
 };
-GeoengineRenderer.components = {LayersPanel, GeoengineRecord};
+GeoengineRenderer.components = {LayersPanel, GeoengineRecord, RecordsPanel};
