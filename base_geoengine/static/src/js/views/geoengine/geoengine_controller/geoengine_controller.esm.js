@@ -9,15 +9,17 @@ import {useModel} from "@web/views/model";
 import {usePager} from "@web/search/pager_hook";
 import {useService} from "@web/core/utils/hooks";
 
-const {Component} = owl;
+const {Component, useState} = owl;
 
 export class GeoengineController extends Component {
     /**
      * Setup the controller by using the useModel hook.
      */
     setup() {
+        this.state = useState({isSavedOrDiscarded: false});
         this.actionService = useService("action");
         this.view = useService("view");
+        this.editable = this.props.archInfo.editable;
         this.model = useModel(this.props.Model, {
             activeFields: this.props.archInfo.activeFields,
             resModel: this.props.resModel,
@@ -43,7 +45,7 @@ export class GeoengineController extends Component {
             };
         });
     }
-    /**
+    /** 0
      * Allow you to open the form editing view for the filled-in model.
      * @param {*} resModel
      * @param {*} resId
@@ -56,7 +58,28 @@ export class GeoengineController extends Component {
             views: [[views.form.id, "form"]],
             res_id: resId,
             target: "new",
+            context: {edit: false, create: false},
         });
+    }
+
+    async onClickSave() {
+        this.state.isSavedOrDiscarded = true;
+        await this.model.root.editedRecord.save();
+    }
+
+    async onClickDiscard() {
+        this.state.isSavedOrDiscarded = true;
+        await this.model.root.editedRecord.discard();
+    }
+
+    async updateRecord(value) {
+        this.state.isSavedOrDiscarded = false;
+        const newValue = {};
+        const key = Object.keys(this.model.root.fields).find(
+            (el) => this.model.root.fields[el].geo_type !== undefined
+        );
+        newValue[key] = value;
+        await this.model.root.editedRecord.update(newValue);
     }
 }
 

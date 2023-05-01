@@ -15,7 +15,16 @@ import {registry} from "@web/core/registry";
 import {RelationalModel} from "@web/views/relational_model";
 import {evaluateExpr} from "@web/core/py_js/py";
 
-const {Component, onWillStart, onMounted, onRendered, reactive, mount} = owl;
+const {
+    Component,
+    onWillStart,
+    onMounted,
+    onWillUpdateProps,
+    reactive,
+    mount,
+    useState,
+    onPatched,
+} = owl;
 
 /* CONSTANTS */
 const DEFAULT_BEGIN_COLOR = "#FFFFFF";
@@ -28,6 +37,7 @@ const DEFAULT_NUM_CLASSES = 5;
 export class GeoengineRenderer extends Component {
     setup() {
         super.setup();
+        this.state = useState({selectedFeatures: [], isModified: false});
 
         // When a change is issued in the rasterLayersStore or the vectorLayersStore the LayerChanged method is called.
         this.rasterLayersStore = reactive(rasterLayersStore, () =>
@@ -69,8 +79,14 @@ export class GeoengineRenderer extends Component {
             this.renderVectorLayers();
         });
 
-        onRendered(() => {
-            if (this.map !== undefined) {
+        onWillUpdateProps((nextProps) => {
+            if (nextProps.isSavedOrDiscarded) {
+                this.state.isModified = false;
+            }
+        });
+
+        onPatched(() => {
+            if (this.map !== undefined && !this.state.isModified) {
                 this.renderVectorLayers();
             }
         });
@@ -122,7 +138,6 @@ export class GeoengineRenderer extends Component {
             this.registerInteraction();
         }
     }
-
     /**
      * Create the info-box overlay that can be displayed over the map and
      * attached to a single map location.
@@ -244,8 +259,163 @@ export class GeoengineRenderer extends Component {
      * Add 'ScaleLine' control.
      */
     setupControls() {
+        if (this.props.editable) {
+            this.createDrawControl();
+            this.createSelectControl();
+            this.createEditControl();
+        }
         const scaleLine = new ol.control.ScaleLine();
         this.map.addControl(scaleLine);
+    }
+
+    createEditControl() {
+        const {element, button} = this.createHtmlControl(
+            '<i class="fa fa-magic"></i>',
+            "edit-control ol-unselectable ol-control"
+        );
+
+        button.addEventListener("click", () => {
+            this.hidePopup();
+            this.addSelectedClassToButton(button);
+            this.removeDrawInteraction();
+            this.removeSelectInteraction();
+
+            if (
+                this.modifyClick === undefined &&
+                this.modifyInteraction === undefined
+            ) {
+                this.modifyClick = new ol.interaction.Select({
+                    condition: ol.events.condition.click,
+                    filter: (feature) => !feature.get("model"),
+                });
+                this.modifyInteraction = new ol.interaction.Modify({
+                    features: this.modifyClick.getFeatures(),
+                });
+                this.modifyInteraction.on("modifyend", async (ev) => {
+                    this.state.isModified = true;
+                    const resId = ev.features.getArray()[0].getId();
+                    const record = this.props.data.records.find(
+                        (el) => el.resId === resId
+                    );
+                    await record.switchMode("edit");
+                    const format = new ol.format.GeoJSON({
+                        dataProjection: this.map.getView().getProjection(),
+                    });
+                    const value = format.writeGeometry(
+                        ev.features.getArray()[0].getGeometry()
+                    );
+                    this.props.updateRecord(value);
+                });
+                this.map.addInteraction(this.modifyClick);
+                this.map.addInteraction(this.modifyInteraction);
+            }
+        });
+
+        const EditControl = new ol.control.Control({
+            element: element,
+        });
+        this.map.addControl(EditControl);
+    }
+
+    createDrawControl() {
+        const {element, button} = this.createHtmlControl(
+            '<i class="fa fa-pencil"></i>',
+            "draw-control ol-unselectable ol-control"
+        );
+        button.addEventListener("click", () => {
+            this.hidePopup();
+            this.addSelectedClassToButton(button);
+            this.removeModifyInteraction();
+            this.removeSelectInteraction();
+            if (this.props.data.editedRecord !== null) {
+                this.props.onClickDiscard();
+            }
+            if (this.drawInteraction === undefined) {
+                this.drawInteraction = new ol.interaction.Draw({
+                    type: "MultiPolygon",
+                    source: new ol.source.Vector(),
+                });
+                this.map.addInteraction(this.drawInteraction);
+
+                this.drawInteraction.on("drawend", (e) => {
+                    console.log(e);
+                });
+            }
+        });
+
+        const DrawControl = new ol.control.Control({
+            element: element,
+        });
+        this.map.addControl(DrawControl);
+    }
+
+    createSelectControl() {
+        const {element, button} = this.createHtmlControl(
+            '<i class="fa fa-mouse-pointer"></i>',
+            "select-control ol-unselectable ol-control"
+        );
+        this.addSelectedClassToButton(button);
+
+        button.addEventListener("click", () => {
+            this.addSelectedClassToButton(button);
+            this.removeDrawInteraction();
+            this.removeModifyInteraction();
+            if (this.props.data.editedRecord !== null) {
+                this.props.onClickDiscard();
+            }
+            if (
+                this.selectPointerMove === undefined &&
+                this.selectClick === undefined
+            ) {
+                this.registerInteraction();
+            }
+        });
+
+        const SelectControl = new ol.control.Control({
+            element: element,
+        });
+        this.map.addControl(SelectControl);
+    }
+
+    addSelectedClassToButton(button) {
+        document
+            .querySelectorAll(".selected-control")
+            .forEach((el) => el.classList.remove("selected-control"));
+        button.classList.add("selected-control");
+    }
+
+    removeDrawInteraction() {
+        if (this.drawInteraction !== undefined) {
+            this.map.removeInteraction(this.drawInteraction);
+            this.drawInteraction = undefined;
+        }
+    }
+
+    removeModifyInteraction() {
+        if (this.modifyClick !== undefined && this.modifyInteraction !== undefined) {
+            this.map.removeInteraction(this.modifyClick);
+            this.map.removeInteraction(this.modifyInteraction);
+            this.modifyClick = undefined;
+            this.modifyInteraction = undefined;
+        }
+    }
+
+    removeSelectInteraction() {
+        if (this.selectClick !== undefined && this.selectPointerMove !== undefined) {
+            this.map.removeInteraction(this.selectClick);
+            this.map.removeInteraction(this.selectPointerMove);
+            this.selectClick = undefined;
+            this.selectPointerMove = undefined;
+        }
+    }
+
+    createHtmlControl(innerHTML, className) {
+        const button = document.createElement("button");
+        button.innerHTML = innerHTML;
+        const element = document.createElement("div");
+        element.className = className;
+        element.appendChild(button);
+        return {element, button};
     }
 
     /**
@@ -253,7 +423,7 @@ export class GeoengineRenderer extends Component {
      * The second is for the click on the feature.
      */
     registerInteraction() {
-        var selectPointerMove = new ol.interaction.Select({
+        this.selectPointerMove = new ol.interaction.Select({
             condition: ol.events.condition.pointerMove,
             style: this.selectStyle,
         });
@@ -261,12 +431,13 @@ export class GeoengineRenderer extends Component {
             condition: ol.events.condition.click,
             style: this.selectStyle,
         });
+
         this.selectClick.on("select", (e) => {
             const features = e.target.getFeatures();
             this.updateInfoBox(features);
         });
         this.map.addInteraction(this.selectClick);
-        this.map.addInteraction(selectPointerMove);
+        this.map.addInteraction(this.selectPointerMove);
     }
 
     /**
@@ -301,7 +472,6 @@ export class GeoengineRenderer extends Component {
                 });
         }
     }
-
     /**
      * Allow you to display the info box on the map.
      * @param {*} features
@@ -419,7 +589,7 @@ export class GeoengineRenderer extends Component {
     }
 
     /**
-     * When you click on the arrow button, it calls the controller's
+     * When you click on the open button, it calls the controller's
      * openRecord method.
      */
     onInfoBoxClicked() {
@@ -669,7 +839,6 @@ export class GeoengineRenderer extends Component {
         }
         return domain;
     }
-
     /**
      * Loads the model's view that is passed to the layer.
      * @param {*} model
@@ -745,15 +914,11 @@ export class GeoengineRenderer extends Component {
                 item._values === undefined
                     ? item[cfg.geo_field_id[1]]
                     : item._values[cfg.geo_field_id[1]];
-            const featureSrid = this.map.getView().getProjection();
             if (json_geometry) {
-                var format = new ol.format.GeoJSON({
-                    featureProjection: featureSrid,
-                    dataProjection: 'EPSG:' + item.fields[cfg.geo_field_id[1]].geo_type.srid,
-                });
                 const feature = new ol.Feature({
-                    geometry: format.readGeometry(json_geometry),
+                    geometry: new ol.format.GeoJSON().readGeometry(json_geometry),
                     attributes: attributes,
+                    model: cfg.model,
                 });
                 feature.setId(item.resId);
 
@@ -906,7 +1071,6 @@ export class GeoengineRenderer extends Component {
             },
         };
     }
-
     createStyleText() {
         return new ol.style.Text({
             text: "",
@@ -960,7 +1124,6 @@ export class GeoengineRenderer extends Component {
         });
         return {fill, stroke};
     }
-
     /**
      * Allows you to find the index of the color to be used according to its value.
      * @param {*} val
@@ -1006,5 +1169,9 @@ GeoengineRenderer.props = {
     archInfo: {type: Object, optional: false},
     data: {type: Object, optional: false},
     openRecord: {type: Function, optional: false},
+    editable: {type: Boolean, optional: true},
+    updateRecord: {type: Function, optional: false},
+    isSavedOrDiscarded: {type: Boolean, optional: false},
+    onClickDiscard: {type: Function, optional: false},
 };
 GeoengineRenderer.components = {LayersPanel, GeoengineRecord, RecordsPanel};
