@@ -19,7 +19,6 @@
 
     <record id="res_partner_view_geoengine" model="ir.ui.view">
         <field name="name">res.partner.view.geoengine</field>
-        <field eval="16" name="priority"/>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <geoengine>
@@ -64,10 +63,10 @@
     </record>
 
     <record id="action_partner_form_geoengine" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
         <field name="view_mode">geoengine</field>
-        <field name="sequence">20</field>
         <field name="view_id" ref="res_partner_view_geoengine"/>
-        <field name="act_window_id" ref="base.action_partner_form"/>
+        <field name="act_window_id" ref="contacts.action_contacts"/>
     </record>
 
     <record id="res_partner_view_geoengine_vector" model="geoengine.vector.layer">
@@ -79,79 +78,72 @@
         <field eval="6" name="sequence"/>
         <field name="view_id" ref="res_partner_view_geoengine"/>
         <field name="geo_repr">basic</field>
-        <field eval="1" name="nb_class"/>
-        <field name="begin_color">#FF680A</field>
         <field name="active_on_startup">True</field>
+        <field eval="1" name="nb_class" />
+        <field name="begin_color">#FF680A</field>
     </record>
 
-    <!--
-        <record id="res_partner_view_geoengine_vector_raster_osm" model="geoengine.raster.layer">
-            <field name="raster_type">osm</field>
-            <field name="name">OSM</field>
-            <field name="view_id" ref="res_partner_view_geoengine"/>
-            <field eval="0" name="overlay"/>
-        </record>
-    -->
+        <record id="res_partner_view_geoengine_raster_osm" model="geoengine.raster.layer">
+        <field name="raster_type">osm</field>
+        <field name="name">OSM</field>
+        <field name="view_id" ref="res_partner_view_geoengine" />
+        <field eval="0" name="overlay" />
+    </record>
 
-    <record id="res_partner_view_geoengine_vector_raster_agri" model="geoengine.raster.layer">
+    <!--<record id="res_partner_view_geoengine_raster_agri" model="geoengine.raster.layer">
         <field name="raster_type">wmts</field>
         <field name="name">Agri</field>
         <field name="view_id" ref="res_partner_view_geoengine"/>
         <field name="overlay" eval="0"/>
         <field name="use_to_edit" eval="1"/>
-        <field name="url">
-            https://api.mapbox.com/styles/v1/agrista/ck2udgwdx3l331coi96phds2p/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=pk.eyJ1IjoiYWdyaXN0YSIsImEiOiJjaXdlcjAwMnEwMDQ2MnRrNGUycmo5Ym5zIn0.PzmdvMAwzbAfDHOq5sruOQ
-        </field>
-        <field name="matrix_set">GoogleMapsCompatible</field>
+        <field name="url">https://api.mapbox.com/styles/v1/agrista/ck2udgwdx3l331coi96phds2p/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=pk.eyJ1IjoiYWdyaXN0YSIsImEiOiJjbGgxem55Y3oxOGV1M2NwbmxobnY2NmhoIn0.0ilWbe3OrT8JyKObmVorLQ</field>
+        <field name="layer">ck2udgwdx3l331coi96phds2p</field>
+        <field name="matrix_set">EPSG:3857</field>
         <field name="projection">EPSG:3857</field>
-        <field name="request_encoding">REST</field>
         <field name="format_suffix">image/png</field>
-        <field name="resolutions">156543.03392804097,78271.51696402048,39135.75848201024,
-            19567.87924100512,9783.93962050256,4891.96981025128,2445.98490512564,
-            1222.99245256282,611.49622628141,305.748113140705,152.8740565703525,
-            76.43702828517625,38.21851414258813,19.109257071294063,9.554628535647032,
-            4.777314267823516,2.388657133911758,1.194328566955879,0.5971642834779395
-        </field>
-    </record>
+        <field name="request_encoding">REST</field>
+    </record>-->
 
-    <record id="res_partner_view_geoengine_vector_raster_satellite" model="geoengine.raster.layer">
+<!--<record id="res_partner_view_geoengine_vector_raster_satellite" model="geoengine.raster.layer">
+        <field name="raster_type">wmts</field>
+        <field name="name">Agri</field>
+        <field name="view_id" ref="res_partner_view_geoengine"/>
+        <field name="overlay" eval="0"/>
+        <field name="use_to_edit" eval="1"/>
+        <field name="url">https://api.mapbox.com/styles/v1/agrista/ck2udgwdx3l331coi96phds2p/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=pk.eyJ1IjoiYWdyaXN0YSIsImEiOiJjbGgxem55Y3oxOGV1M2NwbmxobnY2NmhoIn0.0ilWbe3OrT8JyKObmVorLQ</field>
+        <field name="layer">ck2udgwdx3l331coi96phds2p</field>
+        <field name="matrix_set">EPSG:3857</field>
+        <field name="projection">EPSG:3857</field>
+        <field name="format_suffix">image/png</field>
+        <field name="request_encoding">REST</field>
+    </record>-->
+
+    <!--<record id="res_partner_view_geoengine_vector_raster_satellite" model="geoengine.raster.layer">
         <field name="raster_type">wmts</field>
         <field name="name">Satellite</field>
         <field name="view_id" ref="res_partner_view_geoengine"/>
         <field name="overlay" eval="0"/>
         <field name="use_to_edit" eval="1"/>
-        <field name="url">
-            https://api.mapbox.com/styles/v1/agrista/ck2w2o6wh0hjq1cmu7n7yd1ax/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=pk.eyJ1IjoiYWdyaXN0YSIsImEiOiJjaXdlcjAwMnEwMDQ2MnRrNGUycmo5Ym5zIn0.PzmdvMAwzbAfDHOq5sruOQ
-        </field>
-        <field name="matrix_set">GoogleMapsCompatible</field>
+        <field name="url">https://api.mapbox.com/styles/v1/agrista/ck2w2o6wh0hjq1cmu7n7yd1ax/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=pk.eyJ1IjoiYWdyaXN0YSIsImEiOiJjbGgxem55Y3oxOGV1M2NwbmxobnY2NmhoIn0.0ilWbe3OrT8JyKObmVorLQ</field>
+        <field name="layer">ck2w2o6wh0hjq1cmu7n7yd1ax</field>
+        <field name="matrix_set">EPSG:3857</field>
+        <field name="projection">EPSG:3857</field>
+        <field name="request_encoding">REST</field>
+        <field name="format_suffix">image/jpeg</field>
+    </record>-->
+
+    <!--<record id="res_partner_view_geoengine_vector_raster_land_capability" model="geoengine.raster.layer">
+        <field name="raster_type">wmts</field>
+        <field name="name">Land Capability</field>
+        <field name="view_id" ref="res_partner_view_geoengine"/>
+        <field name="overlay" eval="0"/>
+        <field name="use_to_edit" eval="0"/>
+        <field name="url">https://api.mapbox.com/styles/v1/agrista/ck4cc25q10ck91dnu30znyxdi/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=pk.eyJ1IjoiYWdyaXN0YSIsImEiOiJjbGgxem55Y3oxOGV1M2NwbmxobnY2NmhoIn0.0ilWbe3OrT8JyKObmVorLQ</field>
+        <field name="layer">ck4cc25q10ck91dnu30znyxdi</field>
+        <field name="matrix_set">EPSG:3857</field>
         <field name="projection">EPSG:3857</field>
         <field name="request_encoding">REST</field>
         <field name="format_suffix">image/png</field>
-        <field name="resolutions">156543.03392804097,78271.51696402048,39135.75848201024,
-            19567.87924100512,9783.93962050256,4891.96981025128,2445.98490512564,
-            1222.99245256282,611.49622628141,305.748113140705,152.8740565703525,
-            76.43702828517625,38.21851414258813,19.109257071294063,9.554628535647032,
-            4.777314267823516,2.388657133911758,1.194328566955879,0.5971642834779395
-        </field>
-    </record>
-
-    <!--    <record id="geoengine_raster_layer_wmts" model="geoengine.raster.layer">
-            <field name="raster_type">wmts</field>
-            <field name="name">sgmc2</field>
-            <field name="view_id" ref="res_partner_view_geoengine"/>
-            <field eval="1" name="overlay"/>
-            <field name="url">https://mrdata.usgs.gov/mapcache/wmts</field>
-            <field name="matrix_set">GoogleMapsCompatible</field>
-            <field name="format_suffix">image/png</field>
-            <field name="projection">EPSG:3857</field>
-            <field name="resolutions">156543.03392804097,78271.51696402048,39135.75848201024,
-                19567.87924100512,9783.93962050256,4891.96981025128,2445.98490512564,
-                1222.99245256282,611.49622628141,305.748113140705,152.8740565703525,
-                76.43702828517625,38.21851414258813,19.109257071294063,9.554628535647032,
-                4.777314267823516,2.388657133911758,1.194328566955879,0.5971642834779395
-            </field>
-        </record>
-    -->
-
+    </record>-->
 
 </odoo>

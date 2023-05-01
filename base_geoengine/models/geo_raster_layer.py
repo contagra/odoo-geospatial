@@ -24,6 +24,7 @@ class GeoRasterLayer(models.Model):
             ("wmts", "WMTS"),
             ("d_wms", "Distant WMS"),
             ("odoo", "Odoo field"),
+            ("mvt", "MVT"),
         ],
         string="Raster layer type",
         default="osm",
@@ -31,6 +32,7 @@ class GeoRasterLayer(models.Model):
     )
     name = fields.Char("Layer Name", translate=True, required=True)
     url = fields.Char("Service URL")
+    layer = fields.Char("Layer")
 
     # technical field to display or not wmts options
     is_wmts = fields.Boolean(compute="_compute_is_wmts")

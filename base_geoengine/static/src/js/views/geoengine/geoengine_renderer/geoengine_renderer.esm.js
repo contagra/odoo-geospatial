@@ -154,11 +154,14 @@ export class GeoengineRenderer extends Component {
                     const {source_opt, tilegrid_opt, layer_opt} =
                         this.createOptions(background);
                     this.getUrl(background, source_opt);
+                    if (background.layer) {
+                        source_opt.layer = background.layer;
+                    }
                     if (background.format_suffix) {
                         source_opt.format = background.format_suffix;
                     }
                     if (background.request_encoding) {
-                        source_opt.request_encoding = background.request_encoding;
+                        source_opt.requestEncoding = background.request_encoding;
                     }
                     if (background.projection) {
                         source_opt.projection = ol.proj.get(background.projection);
