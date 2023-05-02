@@ -136,6 +136,9 @@ export class GeoengineRenderer extends Component {
                     localStorage.setItem("ol-zoom", newZoom);
                 }
             });
+            this.format = new ol.format.GeoJSON({
+                dataProjection: this.map.getView().getProjection(),
+            });
             this.setupControls();
             this.registerInteraction();
         }
@@ -297,10 +300,7 @@ export class GeoengineRenderer extends Component {
                         (el) => el.resId === resId
                     );
                     await record.switchMode("edit");
-                    const format = new ol.format.GeoJSON({
-                        dataProjection: this.map.getView().getProjection(),
-                    });
-                    const value = format.writeGeometry(
+                    const value = this.format.writeGeometry(
                         ev.features.getArray()[0].getGeometry()
                     );
                     this.props.updateRecord(value);
@@ -330,14 +330,21 @@ export class GeoengineRenderer extends Component {
                 this.props.onClickDiscard();
             }
             if (this.drawInteraction === undefined) {
+                const key = Object.keys(this.props.data.fields).find(
+                    (el) => this.props.data.fields[el].geo_type !== undefined
+                );
                 this.drawInteraction = new ol.interaction.Draw({
-                    type: "MultiPolygon",
+                    type: this.props.data.fields[key].geo_type.geo_type,
                     source: new ol.source.Vector(),
                 });
                 this.map.addInteraction(this.drawInteraction);
 
-                this.drawInteraction.on("drawend", (e) => {
-                    console.log(e);
+                this.drawInteraction.on("drawend", (ev) => {
+                    this.props.createRecord(
+                        this.props.data.resModel,
+                        key,
+                        new ol.format.GeoJSON().writeGeometry(ev.feature.getGeometry())
+                    );
                 });
             }
         });
@@ -1179,5 +1186,6 @@ GeoengineRenderer.props = {
     editable: {type: Boolean, optional: true},
     updateRecord: {type: Function, optional: false},
     onClickDiscard: {type: Function, optional: false},
+    createRecord: {type: Function, optional: false},
 };
 GeoengineRenderer.components = {LayersPanel, GeoengineRecord, RecordsPanel};
