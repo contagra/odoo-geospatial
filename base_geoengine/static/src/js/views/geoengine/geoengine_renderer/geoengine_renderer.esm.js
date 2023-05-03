@@ -38,7 +38,7 @@ const DEFAULT_NUM_CLASSES = 5;
 export class GeoengineRenderer extends Component {
     setup() {
         super.setup();
-        this.state = useState({selectedFeatures: [], isModified: false});
+        this.state = useState({selectedFeatures: [], isModified: false, isFit: false});
 
         // When a change is issued in the rasterLayersStore or the vectorLayersStore the LayerChanged method is called.
         this.rasterLayersStore = reactive(rasterLayersStore, () =>
@@ -131,16 +131,20 @@ export class GeoengineRenderer extends Component {
                     }),
                 ],
                 overlays: [this.overlay],
-                view: new ol.View({
-                    center: [0, 0],
-                    zoom: 2,
-                }),
+            });
+            this.map.on("moveend", () => {
+                const newZoom = this.map.getView().getZoom();
+                if (newZoom !== localStorage.getItem("ol-zoom")) {
+                    localStorage.setItem("ol-zoom", newZoom);
+                }
+            });
+            this.format = new ol.format.GeoJSON({
+                dataProjection: this.map.getView().getProjection(),
             });
             this.setupControls();
             this.registerInteraction();
         }
     }
-
     /**
      * Create the info-box overlay that can be displayed over the map and
      * attached to a single map location.
@@ -316,12 +320,6 @@ export class GeoengineRenderer extends Component {
         return {source_opt, tilegrid_opt, layer_opt};
     }
 
-    getWMTSCapabilities(url) {
-        fetch(url).then(function (response) {
-            return response.text();
-        })
-    }
-
     /**
      * Add 'ScaleLine' control.
      */
@@ -365,10 +363,7 @@ export class GeoengineRenderer extends Component {
                         (el) => el.resId === resId
                     );
                     await record.switchMode("edit");
-                    const format = new ol.format.GeoJSON({
-                        dataProjection: this.map.getView().getProjection(),
-                    });
-                    const value = format.writeGeometry(
+                    const value = this.format.writeGeometry(
                         ev.features.getArray()[0].getGeometry()
                     );
                     this.props.updateRecord(value);
@@ -398,14 +393,21 @@ export class GeoengineRenderer extends Component {
                 this.props.onClickDiscard();
             }
             if (this.drawInteraction === undefined) {
+                const key = Object.keys(this.props.data.fields).find(
+                    (el) => this.props.data.fields[el].geo_type !== undefined
+                );
                 this.drawInteraction = new ol.interaction.Draw({
-                    type: "MultiPolygon",
+                    type: this.props.data.fields[key].geo_type.geo_type,
                     source: new ol.source.Vector(),
                 });
                 this.map.addInteraction(this.drawInteraction);
 
-                this.drawInteraction.on("drawend", (e) => {
-                    console.log(e);
+                this.drawInteraction.on("drawend", (ev) => {
+                    this.props.createRecord(
+                        this.props.data.resModel,
+                        key,
+                        new ol.format.GeoJSON().writeGeometry(ev.feature.getGeometry())
+                    );
                 });
             }
         });
@@ -539,7 +541,6 @@ export class GeoengineRenderer extends Component {
                 });
         }
     }
-
     /**
      * Allow you to display the info box on the map.
      * @param {*} features
@@ -640,7 +641,21 @@ export class GeoengineRenderer extends Component {
         const feature = this.vectorSource.getFeatureById(record.resId);
         var map_view = this.map.getView();
         if (map_view) {
-            map_view.fit(feature.getGeometry().getExtent(), {maxZoom: 14});
+            map_view.fit(feature.getGeometry(), {maxZoom: 14});
+        }
+    }
+
+    getOriginalZoom() {
+        var extent = this.vectorLayersResult
+            .find((res) => res.values_.visible === true)
+            .getSource()
+            .getExtent();
+        var infinite_extent = [Infinity, Infinity, -Infinity, -Infinity];
+        if (extent !== infinite_extent) {
+            var map_view = this.map.getView();
+            if (map_view) {
+                map_view.fit(extent, {maxZoom: 15});
+            }
         }
     }
 
@@ -771,13 +786,13 @@ export class GeoengineRenderer extends Component {
 
     async renderVectorLayers() {
         const data = this.props.data.records;
+        const vectorLayers = await this.createVectorLayers(data);
+        this.vectorLayersResult = await Promise.all(vectorLayers);
         this.map.getLayers().forEach((layer) => {
             if (layer.get("title") === "Overlays") {
                 this.map.removeLayer(layer);
             }
         });
-        const vectorLayers = await this.createVectorLayers(data);
-        this.vectorLayersResult = await Promise.all(vectorLayers);
         this.overlaysGroup = new ol.layer.Group({
             title: "Overlays",
             layers: this.vectorLayersResult,
@@ -798,18 +813,11 @@ export class GeoengineRenderer extends Component {
      * Adapts the zoom according to the result obtained.
      */
     updateZoom() {
-        if (this.props.data.records.length) {
-            var extent = this.vectorLayersResult
-                .find((res) => res.values_.visible === true)
-                .getSource()
-                .getExtent();
-            var infinite_extent = [Infinity, Infinity, -Infinity, -Infinity];
-            if (extent.toString() !== infinite_extent.toString()) {
-                var map_view = this.map.getView();
-                if (map_view) {
-                    map_view.fit(extent, {maxZoom: 15});
-                }
-            }
+        if (this.state.isFit) {
+            this.map.getView().setZoom(localStorage.getItem("ol-zoom"));
+        } else if (this.props.data.records.length) {
+            this.getOriginalZoom();
+            this.state.isFit = true;
         }
     }
 
@@ -907,7 +915,6 @@ export class GeoengineRenderer extends Component {
         }
         return domain;
     }
-
     /**
      * Loads the model's view that is passed to the layer.
      * @param {*} model
@@ -1140,7 +1147,6 @@ export class GeoengineRenderer extends Component {
             },
         };
     }
-
     createStyleText() {
         return new ol.style.Text({
             text: "",
@@ -1194,7 +1200,6 @@ export class GeoengineRenderer extends Component {
         });
         return {fill, stroke};
     }
-
     /**
      * Allows you to find the index of the color to be used according to its value.
      * @param {*} val
@@ -1237,12 +1242,13 @@ export class GeoengineRenderer extends Component {
 
 GeoengineRenderer.template = "base_geoengine.GeoengineRenderer";
 GeoengineRenderer.props = {
+    isSavedOrDiscarded: {type: Boolean, optional: false},
     archInfo: {type: Object, optional: false},
     data: {type: Object, optional: false},
     openRecord: {type: Function, optional: false},
     editable: {type: Boolean, optional: true},
     updateRecord: {type: Function, optional: false},
-    isSavedOrDiscarded: {type: Boolean, optional: false},
     onClickDiscard: {type: Function, optional: false},
+    createRecord: {type: Function, optional: false},
 };
 GeoengineRenderer.components = {LayersPanel, GeoengineRecord, RecordsPanel};

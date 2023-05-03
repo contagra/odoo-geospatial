@@ -62,6 +62,30 @@ export class GeoengineController extends Component {
         });
     }
 
+    async createRecord(resModel, field, value) {
+        const {views} = await this.view.loadViews({resModel, views: [[false, "form"]]});
+        const context = {};
+        context[`default_${field}`] = value;
+        this.actionService.doAction(
+            {
+                type: "ir.actions.act_window",
+                res_model: resModel,
+                views: [[views.form.id, "form"]],
+                target: "new",
+                context,
+            },
+            {
+                onClose: async () => await this.onSaveRecord(),
+            }
+        );
+    }
+
+    async onSaveRecord() {
+        const offset = this.model.root.count + 1;
+        await this.model.root.load({limit: 80, offset});
+        this.render(true);
+    }
+
     async onClickSave() {
         this.state.isSavedOrDiscarded = true;
         await this.model.root.editedRecord.save();
