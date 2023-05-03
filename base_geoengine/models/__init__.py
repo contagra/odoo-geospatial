@@ -24,5 +24,7 @@ from . import base
 from . import geo_raster_layer
 from . import geo_vector_layer
 from . import ir_fields_converter
+from . import ir_http
 from . import ir_view
 from . import ir_model
+from . import res_config_settings

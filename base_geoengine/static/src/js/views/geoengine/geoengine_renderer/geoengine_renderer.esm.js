@@ -14,6 +14,7 @@ import {useService} from "@web/core/utils/hooks";
 import {registry} from "@web/core/registry";
 import {RelationalModel} from "@web/views/relational_model";
 import {evaluateExpr} from "@web/core/py_js/py";
+import {session} from "@web/session";
 
 const {
     Component,
@@ -97,6 +98,7 @@ export class GeoengineRenderer extends Component {
             "/base_geoengine/static/lib/ol-7.2.2/ol.js",
             "/base_geoengine/static/lib/chromajs-2.4.2/chroma.js",
             "/base_geoengine/static/lib/geostats-2.0.0/geostats.js",
+            "/base_geoengine/static/lib/ol-mapbox-style-10.5.0/olms.js",
         ];
         for (const file of files) {
             await loadJS(file);
@@ -138,6 +140,7 @@ export class GeoengineRenderer extends Component {
             this.registerInteraction();
         }
     }
+
     /**
      * Create the info-box overlay that can be displayed over the map and
      * attached to a single map location.
@@ -169,9 +172,6 @@ export class GeoengineRenderer extends Component {
                     const {source_opt, tilegrid_opt, layer_opt} =
                         this.createOptions(background);
                     this.getUrl(background, source_opt);
-                    if (background.layer) {
-                        source_opt.layer = background.layer;
-                    }
                     if (background.format_suffix) {
                         source_opt.format = background.format_suffix;
                     }
@@ -224,6 +224,67 @@ export class GeoengineRenderer extends Component {
                         visible: !background.overlay,
                         source: new ol.source.TileWMS(source_opt_wms),
                     });
+                case "mvt":
+                    const mvt_token = session.mapbox_token || ""
+                    const mvt_style = background.url
+                    const mvt_layer = new ol.layer.VectorTile({
+                        title: background.name,
+                        visible: !background.overlay,
+                        declutter: true
+                    });
+                    olms.applyStyle(mvt_layer, mvt_style, {accessToken: mvt_token});
+                    return mvt_layer;
+                case "mb_wmts":
+                    const token = session.mapbox_token || ""
+                    const style = background.url.replace('mapbox://styles/', '');
+                    const style_layer = style.split('/')[1];
+                    const tilegrid_opt_mb = {};
+                    const source_opt_mb = {
+                        layer: style_layer,
+                        matrixSet: background.matrix_set,
+                    };
+                    const layer_opt_mb = {
+                        title: background.name,
+                        visible: !background.overlay,
+                        type: "base",
+                        style: "default",
+                    };
+                    if (background.format_suffix) {
+                        source_opt_mb.format = background.format_suffix;
+                    }
+                    if (background.request_encoding) {
+                        source_opt_mb.requestEncoding = background.request_encoding;
+                    }
+                    if (background.projection) {
+                        source_opt_mb.projection = ol.proj.get(background.projection);
+                        if (source_opt_mb.projection) {
+                            const projectionExtent = source_opt_mb.projection.getExtent();
+                            tilegrid_opt_mb.origin =
+                                ol.extent.getTopLeft(projectionExtent);
+                        }
+                    }
+                    if (background.resolutions) {
+                        tilegrid_opt_mb.resolutions = background.resolutions
+                            .split(",")
+                            .map(Number);
+                        const nbRes = tilegrid_opt_mb.resolutions.length;
+                        const matrixIds = new Array(nbRes);
+                        for (let i = 0; i < nbRes; i++) {
+                            matrixIds[i] = i;
+                        }
+                        tilegrid_opt_mb.matrixIds = matrixIds;
+                        tilegrid_opt_mb.tileSize = [512, 512];
+                    }
+                    if (background.max_extent) {
+                        const extent = background.max_extent.split(",").map(Number);
+                        layer_opt_mb.extent = extent;
+                        tilegrid_opt_mb.extent = extent;
+                    }
+                    source_opt_mb.url = 'https://api.mapbox.com/styles/v1/' + style + '/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=' + token
+                    source_opt_mb.tileGrid = new ol.tilegrid.WMTS(tilegrid_opt_mb);
+                    layer_opt_mb.source = new ol.source.WMTS(source_opt_mb);
+                    return new ol.layer.Tile(layer_opt_mb);
+
                 default:
                     return undefined;
             }
@@ -253,6 +314,12 @@ export class GeoengineRenderer extends Component {
             style: "default",
         };
         return {source_opt, tilegrid_opt, layer_opt};
+    }
+
+    getWMTSCapabilities(url) {
+        fetch(url).then(function (response) {
+            return response.text();
+        })
     }
 
     /**
@@ -472,6 +539,7 @@ export class GeoengineRenderer extends Component {
                 });
         }
     }
+
     /**
      * Allow you to display the info box on the map.
      * @param {*} features
@@ -736,7 +804,7 @@ export class GeoengineRenderer extends Component {
                 .getSource()
                 .getExtent();
             var infinite_extent = [Infinity, Infinity, -Infinity, -Infinity];
-            if (extent !== infinite_extent) {
+            if (extent.toString() !== infinite_extent.toString()) {
                 var map_view = this.map.getView();
                 if (map_view) {
                     map_view.fit(extent, {maxZoom: 15});
@@ -839,6 +907,7 @@ export class GeoengineRenderer extends Component {
         }
         return domain;
     }
+
     /**
      * Loads the model's view that is passed to the layer.
      * @param {*} model
@@ -1071,6 +1140,7 @@ export class GeoengineRenderer extends Component {
             },
         };
     }
+
     createStyleText() {
         return new ol.style.Text({
             text: "",
@@ -1124,6 +1194,7 @@ export class GeoengineRenderer extends Component {
         });
         return {fill, stroke};
     }
+
     /**
      * Allows you to find the index of the color to be used according to its value.
      * @param {*} val
