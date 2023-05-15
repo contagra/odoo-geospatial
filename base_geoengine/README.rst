@@ -107,10 +107,12 @@ Geoengine Demo
 16. As an admin, I have the possibility to edit the layer with its corresponding button.
 17. As a user/admin, I can open/close LayerPanel with its button.
 18. As a user/admin, I can open/close RecordsPanel with its button.
-19. As a user/admin, when I click on a record in RecordsPanel, a move is made on the map to the selected record. 
+19. As a user/admin, when I click on a record in RecordsPanel, a move is made on the map to the selected record.
 20. As a user/admin, when I click on a record in RecordsPanel, I can also click on the left magnifying glass to zoom on the record.
-21. As a user/admin, when I click on a record in RecordsPanel, I can also click on the right magnifying glass to get the original zoom. 
+21. As a user/admin, when I click on a record in RecordsPanel, I can also click on the right magnifying glass to get the original zoom.
 22. As a user/admin, I can use the search bar to search in the RecordsPanel.
+23. As an admin,If the geoengine view is in edit mode, I can create new records by drawing them in the view.
+24. As an admin, If the geoengine view is in edit mode, I can modify its spatial representation.
 
 ------------------
 Geoengine Backend
@@ -224,6 +226,35 @@ Changelog
 * A button to open/close the panels is also available.
 * The module has been translated in French.
 
+=======================
+16.0.1.0.0 (2023-05-08)
+=======================
+
+* Now you can now make the geoengine view editable. Simply add editable attribute in the geoengine view.
+
+.. code-block:: xml
+
+    <geoengine editable="1">
+        <field name="name" />
+        <field name="city" />
+        <field name="total_sales" />
+        <field name="the_geom" />
+        <field name="display_name" />
+        <templates>
+          <t t-name="info_box">
+            <field name="city" widget="badge" />
+            <ul>
+              <li>ZIP : <field name="name" />
+              </li>
+              <li>Total Sales: <field name="total_sales" />
+              </li>
+            </ul>
+          </t>
+        </templates>
+      </geoengine>
+
+    Thanks to that, you can create new records by drawing them directly in the geoengine view. You can also edit record in the same view.
+
 Bug Tracker
 ===========
 
@@ -237,9 +268,9 @@ Do not contact contributors directly about support or help with technical issues
 Credits
 =======
 
--------
+--------
 Authors
--------
+--------
 
 * Camptocamp
 * ACSONE SA/NV

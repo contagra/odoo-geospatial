@@ -7,7 +7,9 @@
 import {Layout} from "@web/search/layout";
 import {useModel} from "@web/views/model";
 import {usePager} from "@web/search/pager_hook";
-import {useService} from "@web/core/utils/hooks";
+import {useOwnedDialogs, useService} from "@web/core/utils/hooks";
+import {FormViewDialog} from "@web/views/view_dialogs/form_view_dialog";
+import {WarningDialog} from "@web/core/errors/error_dialogs";
 
 const {Component, useState} = owl;
 
@@ -19,6 +21,7 @@ export class GeoengineController extends Component {
         this.state = useState({isSavedOrDiscarded: false});
         this.actionService = useService("action");
         this.view = useService("view");
+        this.addDialog = useOwnedDialogs();
         this.editable = this.props.archInfo.editable;
         this.model = useModel(this.props.Model, {
             activeFields: this.props.archInfo.activeFields,
@@ -45,7 +48,7 @@ export class GeoengineController extends Component {
             };
         });
     }
-    /** 0
+    /**
      * Allow you to open the form editing view for the filled-in model.
      * @param {*} resModel
      * @param {*} resId
@@ -62,40 +65,55 @@ export class GeoengineController extends Component {
         });
     }
 
+    /**
+     * When you finished drawing a new shape, this method is called to open form view and create the record.
+     * @param {*} resModel
+     * @param {*} field
+     * @param {*} value
+     */
     async createRecord(resModel, field, value) {
         const {views} = await this.view.loadViews({resModel, views: [[false, "form"]]});
         const context = {};
         context[`default_${field}`] = value;
-        this.actionService.doAction(
-            {
-                type: "ir.actions.act_window",
-                res_model: resModel,
-                views: [[views.form.id, "form"]],
-                target: "new",
-                context,
-            },
-            {
-                onClose: async () => await this.onSaveRecord(),
-            }
-        );
+
+        this.addDialog(FormViewDialog, {
+            resModel: resModel,
+            title: this.env._t("New record"),
+            viewId: views.form.id,
+            context,
+            onRecordSaved: async () => await this.onSaveRecord(),
+        });
     }
 
+    /**
+     * This method is called when you have finished to create a new record.
+     */
     async onSaveRecord() {
         const offset = this.model.root.count + 1;
-        await this.model.root.load({limit: 80, offset});
+        await this.model.root.load({offset});
         this.render(true);
     }
 
+    /**
+     * This method is called when you click on save button after edit a spatial representation.
+     */
     async onClickSave() {
-        this.state.isSavedOrDiscarded = true;
         await this.model.root.editedRecord.save();
-    }
-
-    async onClickDiscard() {
         this.state.isSavedOrDiscarded = true;
-        await this.model.root.editedRecord.discard();
     }
 
+    /**
+     * This method is called when you click on discard button after edit a spatial representation.
+     */
+    async onClickDiscard() {
+        await this.model.root.editedRecord.discard();
+        this.state.isSavedOrDiscarded = true;
+    }
+
+    /**
+     * When you have finished edtiting a spatial representation, this method is called to update the value.
+     * @param {*} value
+     */
     async updateRecord(value) {
         this.state.isSavedOrDiscarded = false;
         const newValue = {};
@@ -104,6 +122,21 @@ export class GeoengineController extends Component {
         );
         newValue[key] = value;
         await this.model.root.editedRecord.update(newValue);
+    }
+
+    /**
+     * This method warns you if you start creating a record without having displayed the others.
+     */
+    onDrawStart() {
+        const {count, records} = this.model.root;
+        if (records.length < count) {
+            this.addDialog(WarningDialog, {
+                title: this.env._t("Warning"),
+                message: this.env._t(
+                    "You are about to create a new record without having displayed all the others. A risk of overlap could occur. Would you like to continue ?"
+                ),
+            });
+        }
     }
 }
 

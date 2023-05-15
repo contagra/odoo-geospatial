@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-11 13:05+0000\n"
-"PO-Revision-Date: 2023-04-11 13:05+0000\n"
+"POT-Creation-Date: 2023-05-15 06:18+0000\n"
+"PO-Revision-Date: 2023-05-15 06:18+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -125,6 +125,13 @@ msgid "Dimensions"
 msgstr ""
 
 #. module: base_geoengine
+#. odoo-javascript
+#: code:addons/base_geoengine/static/src/js/views/geoengine/geoengine_controller/geoengine_controller.xml:0
+#, python-format
+msgid "Discard"
+msgstr "Annuler"
+
+#. module: base_geoengine
 #: model:ir.model.fields,field_description:base_geoengine.field_geoengine_vector_layer__display_polygon_labels
 msgid "Display Labels on Polygon"
 msgstr "Afficher les étiquettes sur les polygones"
@@ -193,7 +200,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:base_geoengine.geo_vector_geoengine_view_form
 #: model_terms:ir.ui.view,arch_db:base_geoengine.geo_vector_view_form
 msgid "General"
-msgstr ""
+msgstr "Général"
 
 #. module: base_geoengine
 #. odoo-python
@@ -202,8 +209,8 @@ msgstr ""
 msgid ""
 "Geo Value %(geom_type)s must be of the same type %(geo_type)s as fields"
 msgstr ""
-"La valeur géographique %(geom_type)s doit être du même type %(geo_type)s que"
-"les champs"
+"La valeur géographique %(geom_type)s doit être du même type %(geo_type)s "
+"queles champs"
 
 #. module: base_geoengine
 #. odoo-python
@@ -211,9 +218,10 @@ msgstr ""
 #, python-format
 msgid ""
 "Geo dimention modification is not implemented. We can not change dimention "
-"%s to %s"
+"%(data)s to %(dim)s"
 msgstr ""
-"La modification de la dimension de géographique n'est pas implémentée. Nous ne pouvons pas modifier la dimension %s à %s"
+"La modification de la dimension de la géométrie n'est pas implémentée. Nous ne pouvons pas modifier la dimension "
+"%(data)s to %(dim)s"
 
 #. module: base_geoengine
 #: model:ir.model.fields,field_description:base_geoengine.field_geoengine_vector_layer__geo_field_id
@@ -225,9 +233,12 @@ msgstr "Champ géographique"
 #: code:addons/base_geoengine/fields.py:0
 #, python-format
 msgid ""
-"Geo type modification is not implemented. We can not change type %s to %s"
+"Geo type modification is not implemented. We can not change type %(data)s to"
+" %(geo_type)s"
 msgstr ""
-"La modification de type géographique n'est pas implémentée. Nous ne pouvons pas modifier le type %s en %s."
+"La modification du type de la géométrie n'est pas implémentée. Nous ne pouvons pas changer le type %(data)s to"
+" %(geo_type)s"
+
 #. module: base_geoengine
 #: model:ir.model.fields.selection,name:base_geoengine.selection__ir_ui_view__type__geoengine
 msgid "GeoEngine"
@@ -434,6 +445,13 @@ msgid "Need to provide at least a LAYERS param"
 msgstr "Besoin de fournir au moins un paramètre LAYERS"
 
 #. module: base_geoengine
+#. odoo-javascript
+#: code:addons/base_geoengine/static/src/js/views/geoengine/geoengine_controller/geoengine_controller.esm.js:0
+#, python-format
+msgid "New record"
+msgstr "Nouvel enregistrement"
+
+#. module: base_geoengine
 #. odoo-python
 #: code:addons/base_geoengine/models/base.py:0
 #, python-format
@@ -572,6 +590,13 @@ msgid "Rasters"
 msgstr "Couches d'arrière-plan"
 
 #. module: base_geoengine
+#. odoo-javascript
+#: code:addons/base_geoengine/static/src/js/views/geoengine/records_panel/records_panel.xml:0
+#, python-format
+msgid "Records ("
+msgstr "Enregistrements ("
+
+#. module: base_geoengine
 #: model_terms:ir.ui.view,arch_db:base_geoengine.geo_vector_view_form
 msgid "Related Model"
 msgstr "Modèle associé"
@@ -598,10 +623,11 @@ msgstr "Mode de représentation"
 #: code:addons/base_geoengine/fields.py:0
 #, python-format
 msgid ""
-"Reprojection of column is not implemented. We can not change srid %s to %s"
+"Reprojection of column is not implemented. We can not change srid %(srid)s "
+"to %(data)s"
 msgstr ""
-"La reprojection de la colonne n'est pas implémentée. Nous ne pouvons pas changer le srid %s en %s"
-
+"La reprojection de la colonne n'est pas mise en oeuvre. Nous ne pouvons pas "
+"modifier le srid %(srid)s to %(data)s"
 
 #. module: base_geoengine
 #: model:ir.model.fields,field_description:base_geoengine.field_geoengine_raster_layer__request_encoding
@@ -617,6 +643,13 @@ msgstr "Résolutions"
 #: model:ir.model.fields,field_description:base_geoengine.field_ir_ui_view__restricted_extent
 msgid "Restricted map extent"
 msgstr "Limitation de l'étendue de la carte"
+
+#. module: base_geoengine
+#. odoo-javascript
+#: code:addons/base_geoengine/static/src/js/views/geoengine/geoengine_controller/geoengine_controller.xml:0
+#, python-format
+msgid "Save"
+msgstr "Sauvegarder"
 
 #. module: base_geoengine
 #. odoo-javascript
@@ -647,7 +680,8 @@ msgstr "URL du service"
 #: code:addons/base_geoengine/geo_convertion_helper.py:0
 #, python-format
 msgid "Shapely or geojson are not available in the sys path"
-msgstr "Shapely ou geojson ne sont pas disponibles dans le chemin d'accès système"
+msgstr ""
+"Shapely ou geojson ne sont pas disponibles dans le chemin d'accès système"
 
 #. module: base_geoengine
 #. odoo-javascript
@@ -756,6 +790,13 @@ msgid "WMTS options"
 msgstr "Options du WMTS"
 
 #. module: base_geoengine
+#. odoo-javascript
+#: code:addons/base_geoengine/static/src/js/views/geoengine/geoengine_controller/geoengine_controller.esm.js:0
+#, python-format
+msgid "Warning"
+msgstr "Attention"
+
+#. module: base_geoengine
 #. odoo-python
 #: code:addons/base_geoengine/geo_convertion_helper.py:0
 #, python-format
@@ -765,11 +806,30 @@ msgid ""
 msgstr ""
 
 #. module: base_geoengine
+#. odoo-javascript
+#: code:addons/base_geoengine/static/src/js/views/geoengine/geoengine_controller/geoengine_controller.esm.js:0
+#, python-format
+msgid ""
+"You are about to create a new record without having displayed all the "
+"others. A risk of overlap could occur. Would you like to continue ?"
+msgstr ""
+"Vous êtes sur le point de créer un nouvel enregistrement sans avoir affiché "
+"tous les autres. Un risque de chevauchement pourrait se produire. Voulez-"
+"vous continuer ?"
+
+#. module: base_geoengine
 #. odoo-python
 #: code:addons/base_geoengine/models/base.py:0
 #, python-format
 msgid "You must at least provide one of domain or geo_domain"
 msgstr "Vous devez fournir au moins un domaine ou un géo-domaine"
+
+#. module: base_geoengine
+#. odoo-python
+#: code:addons/base_geoengine/models/geo_vector_layer.py:0
+#, python-format
+msgid "You need to provide an attribute that exists in %s model"
+msgstr "Vous devez fournir un attribut qui existe dans le modèle %s"
 
 #. module: base_geoengine
 #. odoo-python
@@ -827,6 +887,13 @@ msgid "geo_intersect"
 msgstr ""
 
 #. module: base_geoengine
+#. odoo-javascript
+#: code:addons/base_geoengine/static/src/js/widgets/domain_selector_geo_field/domain_selector_geo_field/domain_selector_geo_field.esm.js:0
+#, python-format
+msgid "geo_lesser"
+msgstr ""
+
+#. module: base_geoengine
 #: model:ir.model.fields.selection,name:base_geoengine.selection__ir_model_fields__ttype__geo_line
 msgid "geo_line"
 msgstr ""
@@ -861,7 +928,9 @@ msgstr ""
 #: code:addons/base_geoengine/models/base.py:0
 #, python-format
 msgid "geo_search is deprecated: uses search method defined on base model"
-msgstr "la méthode geo_search est dépréciée : utilisez la méthode search définie dans le modèle de base"
+msgstr ""
+"la méthode geo_search est dépréciée : utilisez la méthode search définie "
+"dans le modèle de base"
 
 #. module: base_geoengine
 #. odoo-javascript
@@ -883,7 +952,9 @@ msgstr ""
 #, python-format
 msgid ""
 "geometry_columns table seems to be corrupted. SRID check is not possible"
-msgstr "La table geometry_columns semble être corrompue. La vérification de SRID n'est pas possible"
+msgstr ""
+"La table geometry_columns semble être corrompue. La vérification de SRID "
+"n'est pas possible"
 
 #. module: base_geoengine
 #: model:ir.model.fields,help:base_geoengine.field_geoengine_vector_layer__begin_color
