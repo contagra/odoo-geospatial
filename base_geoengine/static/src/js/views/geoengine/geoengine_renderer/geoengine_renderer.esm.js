@@ -28,6 +28,7 @@ const DEFAULT_NUM_CLASSES = 5;
 export class GeoengineRenderer extends Component {
     setup() {
         super.setup();
+        this.models = [];
 
         // When a change is issued in the rasterLayersStore or the vectorLayersStore the LayerChanged method is called.
         this.rasterLayersStore = reactive(rasterLayersStore, () =>
@@ -308,11 +309,14 @@ export class GeoengineRenderer extends Component {
                 var attributes = feature.get("attributes");
 
                 if (this.cfg_models.includes(feature.get("model"))) {
+                    const model = this.models.find(
+                        (el) => el.model.resModel === feature.get("model")
+                    );
                     this.mountGeoengineRecord({
                         popup,
-                        archInfo: this.archInfo,
-                        templateDocs: this.archInfo.templateDocs,
-                        model: this.model.root,
+                        archInfo: model.archInfo,
+                        templateDocs: model.archInfo.templateDocs,
+                        model: model.model,
                         attributes,
                     });
                 } else {
@@ -686,7 +690,7 @@ export class GeoengineRenderer extends Component {
             views: [[false, view]],
         });
         const {ArchParser, Model} = viewRegistry.get(view);
-        this.archInfo = new ArchParser().parse(views[view].arch, relatedModels, model);
+        const archInfo = new ArchParser().parse(views[view].arch, relatedModels, model);
 
         if (model === "geoengine.vector.layer") {
             const notAllowedField = Object.keys(fields).filter(
@@ -697,13 +701,14 @@ export class GeoengineRenderer extends Component {
             );
             notAllowedField.forEach((field) => {
                 delete field[field];
-                delete this.archInfo.activeFields[field];
+                delete archInfo.activeFields[field];
             });
         }
         const searchParams = {
-            activeFields: this.archInfo.activeFields,
+            activeFields: archInfo.activeFields,
             resModel: model,
             fields: fields,
+            limit: 10000,
         };
         if (model === "geoengine.vector.layer") {
             this.vectorModel = new RelationalModel(
@@ -713,12 +718,16 @@ export class GeoengineRenderer extends Component {
             );
             await this.vectorModel.load();
         } else {
-            this.model = new Model(this.env, searchParams, this.services);
-            await this.model.load();
+            const toLoadModel = new Model(this.env, searchParams, this.services);
+            await toLoadModel.load().then(() => {
+                if (this.models.find((e) => e.model.resModel === model) === undefined) {
+                    this.models.push({model: toLoadModel.root, archInfo});
+                }
+            });
         }
     }
 
-    addFeatureToSource(data, cfg, vectorSource) {
+    addFeatureToSource(data, cfg) {
         data.forEach((item) => {
             var attributes =
                 item._values === undefined ? _.clone(item) : _.clone(item._values);
