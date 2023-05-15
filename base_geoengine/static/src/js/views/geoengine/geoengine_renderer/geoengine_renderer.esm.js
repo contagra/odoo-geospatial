@@ -37,7 +37,11 @@ const DEFAULT_NUM_CLASSES = 5;
 export class GeoengineRenderer extends Component {
     setup() {
         super.setup();
+
         this.state = useState({selectedFeatures: [], isModified: false, isFit: false});
+        this.models = [];
+        this.cfg_models = [];
+        this.vectorModel = {};
 
         // When a change is issued in the rasterLayersStore or the vectorLayersStore the LayerChanged method is called.
         this.rasterLayersStore = reactive(rasterLayersStore, () =>
@@ -46,8 +50,10 @@ export class GeoengineRenderer extends Component {
         this.vectorLayersStore = reactive(vectorLayersStore, () =>
             this.onVectorLayerChanged()
         );
+
         this.orm = useService("orm");
         this.view = useService("view");
+        this.user = useService("user");
 
         // For related model we need to load all the service needed by RelationalModel
         this.services = {};
@@ -55,16 +61,14 @@ export class GeoengineRenderer extends Component {
             this.services[key] = useService(key);
         }
 
-        this.cfg_models = [];
-        this.vectorModel = {};
-
-        // Load all js and css files. Also load the vector model needed for the layer panel.
-
-        onWillStart(() =>
+        onWillStart(async () =>
             Promise.all([
                 this.loadJsFiles(),
                 this.loadCssFiles(),
                 this.loadVectorModel(),
+                (this.isGeoengineAdmin = await this.user.hasGroup(
+                    "base_geoengine.group_geoengine_admin"
+                )),
             ])
         );
 
@@ -136,6 +140,7 @@ export class GeoengineRenderer extends Component {
                     localStorage.setItem("ol-zoom", newZoom);
                 }
             });
+            this.addMoveEndListenerToMap();
             this.format = new ol.format.GeoJSON({
                 dataProjection: this.map.getView().getProjection(),
             });
@@ -143,6 +148,16 @@ export class GeoengineRenderer extends Component {
             this.registerInteraction();
         }
     }
+
+    addMoveEndListenerToMap() {
+        this.map.on("moveend", () => {
+            const newZoom = this.map.getView().getZoom();
+            if (newZoom !== localStorage.getItem("ol-zoom")) {
+                localStorage.setItem("ol-zoom", newZoom);
+            }
+        });
+    }
+
     /**
      * Create the info-box overlay that can be displayed over the map and
      * attached to a single map location.
@@ -261,7 +276,7 @@ export class GeoengineRenderer extends Component {
      * Add 'ScaleLine' control.
      */
     setupControls() {
-        if (this.props.editable) {
+        if (this.props.editable && this.isGeoengineAdmin) {
             this.createDrawControl();
             this.createSelectControl();
             this.createEditControl();
@@ -338,6 +353,9 @@ export class GeoengineRenderer extends Component {
                     source: new ol.source.Vector(),
                 });
                 this.map.addInteraction(this.drawInteraction);
+                this.drawInteraction.on("drawstart", () => {
+                    this.props.onDrawStart();
+                });
 
                 this.drawInteraction.on("drawend", (ev) => {
                     this.props.createRecord(
@@ -490,11 +508,14 @@ export class GeoengineRenderer extends Component {
                 var attributes = feature.get("attributes");
 
                 if (this.cfg_models.includes(feature.get("model"))) {
+                    const model = this.models.find(
+                        (el) => el.model.resModel === feature.get("model")
+                    );
                     this.mountGeoengineRecord({
                         popup,
-                        archInfo: this.archInfo,
-                        templateDocs: this.archInfo.templateDocs,
-                        model: this.model.root,
+                        archInfo: model.archInfo,
+                        templateDocs: model.archInfo.templateDocs,
+                        model: model.model,
                         attributes,
                     });
                 } else {
@@ -875,7 +896,7 @@ export class GeoengineRenderer extends Component {
             views: [[false, view]],
         });
         const {ArchParser, Model} = viewRegistry.get(view);
-        this.archInfo = new ArchParser().parse(views[view].arch, relatedModels, model);
+        const archInfo = new ArchParser().parse(views[view].arch, relatedModels, model);
 
         if (model === "geoengine.vector.layer") {
             const notAllowedField = Object.keys(fields).filter(
@@ -886,13 +907,14 @@ export class GeoengineRenderer extends Component {
             );
             notAllowedField.forEach((field) => {
                 delete field[field];
-                delete this.archInfo.activeFields[field];
+                delete archInfo.activeFields[field];
             });
         }
         const searchParams = {
-            activeFields: this.archInfo.activeFields,
+            activeFields: archInfo.activeFields,
             resModel: model,
             fields: fields,
+            limit: 10000,
         };
         if (model === "geoengine.vector.layer") {
             this.vectorModel = new RelationalModel(
@@ -901,9 +923,11 @@ export class GeoengineRenderer extends Component {
                 this.services
             );
             await this.vectorModel.load();
-        } else {
-            this.model = new Model(this.env, searchParams, this.services);
-            await this.model.load();
+        } else if (this.models.find((e) => e.model.resModel === model) === undefined) {
+            const toLoadModel = new Model(this.env, searchParams, this.services);
+            await toLoadModel.load().then(() => {
+                this.models.push({model: toLoadModel.root, archInfo});
+            });
         }
     }
 
@@ -1179,13 +1203,14 @@ export class GeoengineRenderer extends Component {
 
 GeoengineRenderer.template = "base_geoengine.GeoengineRenderer";
 GeoengineRenderer.props = {
-    isSavedOrDiscarded: {type: Boolean, optional: false},
-    archInfo: {type: Object, optional: false},
-    data: {type: Object, optional: false},
-    openRecord: {type: Function, optional: false},
+    isSavedOrDiscarded: {type: Boolean},
+    archInfo: {type: Object},
+    data: {type: Object},
+    openRecord: {type: Function},
     editable: {type: Boolean, optional: true},
-    updateRecord: {type: Function, optional: false},
-    onClickDiscard: {type: Function, optional: false},
-    createRecord: {type: Function, optional: false},
+    updateRecord: {type: Function},
+    onClickDiscard: {type: Function},
+    createRecord: {type: Function},
+    onDrawStart: {type: Function},
 };
 GeoengineRenderer.components = {LayersPanel, GeoengineRecord, RecordsPanel};

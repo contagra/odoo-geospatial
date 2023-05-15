@@ -24,14 +24,13 @@
             </t>
             <t
                 t-component="props.Renderer"
-                isSavedOrDiscarded="state.isSavedOrDiscarded"
                 archInfo="props.archInfo"
                 data="model.root"
-                editable="editable"
                 openRecord.bind="openRecord"
                 updateRecord.bind="updateRecord"
                 onClickDiscard.bind="onClickDiscard"
                 createRecord.bind="createRecord"
+                onDrawStart.bind="onDrawStart"
             />
         </Layout>
     </t>

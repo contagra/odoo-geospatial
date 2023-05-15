@@ -91,3 +91,32 @@
 * A search bar is also available. It allows you to perform a search into the RecordsPanel.
 * A button to open/close the panels is also available.
 * The module has been translated in French.
+
+=======================
+16.0.1.0.0 (2023-05-08)
+=======================
+
+* Now you can now make the geoengine view editable. Simply add editable attribute in the geoengine view.
+
+.. code-block:: xml
+
+    <geoengine editable="1">
+        <field name="name" />
+        <field name="city" />
+        <field name="total_sales" />
+        <field name="the_geom" />
+        <field name="display_name" />
+        <templates>
+          <t t-name="info_box">
+            <field name="city" widget="badge" />
+            <ul>
+              <li>ZIP : <field name="name" />
+              </li>
+              <li>Total Sales: <field name="total_sales" />
+              </li>
+            </ul>
+          </t>
+        </templates>
+      </geoengine>
+
+    Thanks to that, you can create new records by drawing them directly in the geoengine view. You can also edit record in the same view.

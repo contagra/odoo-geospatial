@@ -39,6 +39,8 @@ Geoengine Demo
 20. As a user/admin, when I click on a record in RecordsPanel, I can also click on the left magnifying glass to zoom on the record.
 21. As a user/admin, when I click on a record in RecordsPanel, I can also click on the right magnifying glass to get the original zoom.
 22. As a user/admin, I can use the search bar to search in the RecordsPanel.
+23. As an admin,If the geoengine view is in edit mode, I can create new records by drawing them in the view.
+24. As an admin, If the geoengine view is in edit mode, I can modify its spatial representation.
 
 ------------------
 Geoengine Backend
