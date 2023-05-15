@@ -14,18 +14,8 @@ import {useService} from "@web/core/utils/hooks";
 import {registry} from "@web/core/registry";
 import {RelationalModel} from "@web/views/relational_model";
 import {evaluateExpr} from "@web/core/py_js/py";
-import {session} from "@web/session";
 
-const {
-    Component,
-    onWillStart,
-    onMounted,
-    onWillUpdateProps,
-    reactive,
-    mount,
-    useState,
-    onPatched,
-} = owl;
+const {Component, onWillStart, onMounted, onRendered, reactive, mount} = owl;
 
 /* CONSTANTS */
 const DEFAULT_BEGIN_COLOR = "#FFFFFF";
@@ -38,7 +28,6 @@ const DEFAULT_NUM_CLASSES = 5;
 export class GeoengineRenderer extends Component {
     setup() {
         super.setup();
-        this.state = useState({selectedFeatures: [], isModified: false, isFit: false});
 
         // When a change is issued in the rasterLayersStore or the vectorLayersStore the LayerChanged method is called.
         this.rasterLayersStore = reactive(rasterLayersStore, () =>
@@ -80,14 +69,8 @@ export class GeoengineRenderer extends Component {
             this.renderVectorLayers();
         });
 
-        onWillUpdateProps((nextProps) => {
-            if (nextProps.isSavedOrDiscarded) {
-                this.state.isModified = false;
-            }
-        });
-
-        onPatched(() => {
-            if (this.map !== undefined && !this.state.isModified) {
+        onRendered(() => {
+            if (this.map !== undefined) {
                 this.renderVectorLayers();
             }
         });
@@ -98,7 +81,6 @@ export class GeoengineRenderer extends Component {
             "/base_geoengine/static/lib/ol-7.2.2/ol.js",
             "/base_geoengine/static/lib/chromajs-2.4.2/chroma.js",
             "/base_geoengine/static/lib/geostats-2.0.0/geostats.js",
-            "/base_geoengine/static/lib/ol-mapbox-style-10.5.0/olms.js",
         ];
         for (const file of files) {
             await loadJS(file);
@@ -131,15 +113,10 @@ export class GeoengineRenderer extends Component {
                     }),
                 ],
                 overlays: [this.overlay],
-            });
-            this.map.on("moveend", () => {
-                const newZoom = this.map.getView().getZoom();
-                if (newZoom !== localStorage.getItem("ol-zoom")) {
-                    localStorage.setItem("ol-zoom", newZoom);
-                }
-            });
-            this.format = new ol.format.GeoJSON({
-                dataProjection: this.map.getView().getProjection(),
+                view: new ol.View({
+                    center: [0, 0],
+                    zoom: 2,
+                }),
             });
             this.setupControls();
             this.registerInteraction();
@@ -180,7 +157,7 @@ export class GeoengineRenderer extends Component {
                         source_opt.format = background.format_suffix;
                     }
                     if (background.request_encoding) {
-                        source_opt.requestEncoding = background.request_encoding;
+                        source_opt.request_encoding = background.request_encoding;
                     }
                     if (background.projection) {
                         source_opt.projection = ol.proj.get(background.projection);
@@ -228,67 +205,6 @@ export class GeoengineRenderer extends Component {
                         visible: !background.overlay,
                         source: new ol.source.TileWMS(source_opt_wms),
                     });
-                case "mvt":
-                    const mvt_token = session.mapbox_token || ""
-                    const mvt_style = background.url
-                    const mvt_layer = new ol.layer.VectorTile({
-                        title: background.name,
-                        visible: !background.overlay,
-                        declutter: true
-                    });
-                    olms.applyStyle(mvt_layer, mvt_style, {accessToken: mvt_token});
-                    return mvt_layer;
-                case "mb_wmts":
-                    const token = session.mapbox_token || ""
-                    const style = background.url.replace('mapbox://styles/', '');
-                    const style_layer = style.split('/')[1];
-                    const tilegrid_opt_mb = {};
-                    const source_opt_mb = {
-                        layer: style_layer,
-                        matrixSet: background.matrix_set,
-                    };
-                    const layer_opt_mb = {
-                        title: background.name,
-                        visible: !background.overlay,
-                        type: "base",
-                        style: "default",
-                    };
-                    if (background.format_suffix) {
-                        source_opt_mb.format = background.format_suffix;
-                    }
-                    if (background.request_encoding) {
-                        source_opt_mb.requestEncoding = background.request_encoding;
-                    }
-                    if (background.projection) {
-                        source_opt_mb.projection = ol.proj.get(background.projection);
-                        if (source_opt_mb.projection) {
-                            const projectionExtent = source_opt_mb.projection.getExtent();
-                            tilegrid_opt_mb.origin =
-                                ol.extent.getTopLeft(projectionExtent);
-                        }
-                    }
-                    if (background.resolutions) {
-                        tilegrid_opt_mb.resolutions = background.resolutions
-                            .split(",")
-                            .map(Number);
-                        const nbRes = tilegrid_opt_mb.resolutions.length;
-                        const matrixIds = new Array(nbRes);
-                        for (let i = 0; i < nbRes; i++) {
-                            matrixIds[i] = i;
-                        }
-                        tilegrid_opt_mb.matrixIds = matrixIds;
-                        tilegrid_opt_mb.tileSize = [512, 512];
-                    }
-                    if (background.max_extent) {
-                        const extent = background.max_extent.split(",").map(Number);
-                        layer_opt_mb.extent = extent;
-                        tilegrid_opt_mb.extent = extent;
-                    }
-                    source_opt_mb.url = 'https://api.mapbox.com/styles/v1/' + style + '/tiles/{TileMatrix}/{TileCol}/{TileRow}?access_token=' + token
-                    source_opt_mb.tileGrid = new ol.tilegrid.WMTS(tilegrid_opt_mb);
-                    layer_opt_mb.source = new ol.source.WMTS(source_opt_mb);
-                    return new ol.layer.Tile(layer_opt_mb);
-
                 default:
                     return undefined;
             }
@@ -324,175 +240,15 @@ export class GeoengineRenderer extends Component {
      * Add 'ScaleLine' control.
      */
     setupControls() {
-        if (this.props.editable) {
-            this.createDrawControl();
-            this.createSelectControl();
-            this.createEditControl();
-        }
         const scaleLine = new ol.control.ScaleLine();
         this.map.addControl(scaleLine);
     }
-
-    createEditControl() {
-        const {element, button} = this.createHtmlControl(
-            '<i class="fa fa-magic"></i>',
-            "edit-control ol-unselectable ol-control"
-        );
-
-        button.addEventListener("click", () => {
-            this.hidePopup();
-            this.addSelectedClassToButton(button);
-            this.removeDrawInteraction();
-            this.removeSelectInteraction();
-
-            if (
-                this.modifyClick === undefined &&
-                this.modifyInteraction === undefined
-            ) {
-                this.modifyClick = new ol.interaction.Select({
-                    condition: ol.events.condition.click,
-                    filter: (feature) => !feature.get("model"),
-                });
-                this.modifyInteraction = new ol.interaction.Modify({
-                    features: this.modifyClick.getFeatures(),
-                });
-                this.modifyInteraction.on("modifyend", async (ev) => {
-                    this.state.isModified = true;
-                    const resId = ev.features.getArray()[0].getId();
-                    const record = this.props.data.records.find(
-                        (el) => el.resId === resId
-                    );
-                    await record.switchMode("edit");
-                    const value = this.format.writeGeometry(
-                        ev.features.getArray()[0].getGeometry()
-                    );
-                    this.props.updateRecord(value);
-                });
-                this.map.addInteraction(this.modifyClick);
-                this.map.addInteraction(this.modifyInteraction);
-            }
-        });
-
-        const EditControl = new ol.control.Control({
-            element: element,
-        });
-        this.map.addControl(EditControl);
-    }
-
-    createDrawControl() {
-        const {element, button} = this.createHtmlControl(
-            '<i class="fa fa-pencil"></i>',
-            "draw-control ol-unselectable ol-control"
-        );
-        button.addEventListener("click", () => {
-            this.hidePopup();
-            this.addSelectedClassToButton(button);
-            this.removeModifyInteraction();
-            this.removeSelectInteraction();
-            if (this.props.data.editedRecord !== null) {
-                this.props.onClickDiscard();
-            }
-            if (this.drawInteraction === undefined) {
-                const key = Object.keys(this.props.data.fields).find(
-                    (el) => this.props.data.fields[el].geo_type !== undefined
-                );
-                this.drawInteraction = new ol.interaction.Draw({
-                    type: this.props.data.fields[key].geo_type.geo_type,
-                    source: new ol.source.Vector(),
-                });
-                this.map.addInteraction(this.drawInteraction);
-
-                this.drawInteraction.on("drawend", (ev) => {
-                    this.props.createRecord(
-                        this.props.data.resModel,
-                        key,
-                        new ol.format.GeoJSON().writeGeometry(ev.feature.getGeometry())
-                    );
-                });
-            }
-        });
-
-        const DrawControl = new ol.control.Control({
-            element: element,
-        });
-        this.map.addControl(DrawControl);
-    }
-
-    createSelectControl() {
-        const {element, button} = this.createHtmlControl(
-            '<i class="fa fa-mouse-pointer"></i>',
-            "select-control ol-unselectable ol-control"
-        );
-        this.addSelectedClassToButton(button);
-
-        button.addEventListener("click", () => {
-            this.addSelectedClassToButton(button);
-            this.removeDrawInteraction();
-            this.removeModifyInteraction();
-            if (this.props.data.editedRecord !== null) {
-                this.props.onClickDiscard();
-            }
-            if (
-                this.selectPointerMove === undefined &&
-                this.selectClick === undefined
-            ) {
-                this.registerInteraction();
-            }
-        });
-
-        const SelectControl = new ol.control.Control({
-            element: element,
-        });
-        this.map.addControl(SelectControl);
-    }
-
-    addSelectedClassToButton(button) {
-        document
-            .querySelectorAll(".selected-control")
-            .forEach((el) => el.classList.remove("selected-control"));
-        button.classList.add("selected-control");
-    }
-
-    removeDrawInteraction() {
-        if (this.drawInteraction !== undefined) {
-            this.map.removeInteraction(this.drawInteraction);
-            this.drawInteraction = undefined;
-        }
-    }
-
-    removeModifyInteraction() {
-        if (this.modifyClick !== undefined && this.modifyInteraction !== undefined) {
-            this.map.removeInteraction(this.modifyClick);
-            this.map.removeInteraction(this.modifyInteraction);
-            this.modifyClick = undefined;
-            this.modifyInteraction = undefined;
-        }
-    }
-
-    removeSelectInteraction() {
-        if (this.selectClick !== undefined && this.selectPointerMove !== undefined) {
-            this.map.removeInteraction(this.selectClick);
-            this.map.removeInteraction(this.selectPointerMove);
-            this.selectClick = undefined;
-            this.selectPointerMove = undefined;
-        }
-    }
-
-    createHtmlControl(innerHTML, className) {
-        const button = document.createElement("button");
-        button.innerHTML = innerHTML;
-        const element = document.createElement("div");
-        element.className = className;
-        element.appendChild(button);
-        return {element, button};
-    }
-
     /**
      * Add 2 interactions. The first is for the hovering elements.
      * The second is for the click on the feature.
      */
     registerInteraction() {
-        this.selectPointerMove = new ol.interaction.Select({
+        var selectPointerMove = new ol.interaction.Select({
             condition: ol.events.condition.pointerMove,
             style: this.selectStyle,
         });
@@ -500,13 +256,12 @@ export class GeoengineRenderer extends Component {
             condition: ol.events.condition.click,
             style: this.selectStyle,
         });
-
         this.selectClick.on("select", (e) => {
             const features = e.target.getFeatures();
             this.updateInfoBox(features);
         });
         this.map.addInteraction(this.selectClick);
-        this.map.addInteraction(this.selectPointerMove);
+        this.map.addInteraction(selectPointerMove);
     }
 
     /**
@@ -553,11 +308,14 @@ export class GeoengineRenderer extends Component {
                 var attributes = feature.get("attributes");
 
                 if (this.cfg_models.includes(feature.get("model"))) {
+                    const model = this.models.find(
+                        (el) => el.model.resModel === feature.get("model")
+                    );
                     this.mountGeoengineRecord({
                         popup,
-                        archInfo: this.archInfo,
-                        templateDocs: this.archInfo.templateDocs,
-                        model: this.model.root,
+                        archInfo: model.archInfo,
+                        templateDocs: model.archInfo.templateDocs,
+                        model: model.model,
                         attributes,
                     });
                 } else {
@@ -641,21 +399,7 @@ export class GeoengineRenderer extends Component {
         const feature = this.vectorSource.getFeatureById(record.resId);
         var map_view = this.map.getView();
         if (map_view) {
-            map_view.fit(feature.getGeometry(), {maxZoom: 14});
-        }
-    }
-
-    getOriginalZoom() {
-        var extent = this.vectorLayersResult
-            .find((res) => res.values_.visible === true)
-            .getSource()
-            .getExtent();
-        var infinite_extent = [Infinity, Infinity, -Infinity, -Infinity];
-        if (extent !== infinite_extent) {
-            var map_view = this.map.getView();
-            if (map_view) {
-                map_view.fit(extent, {maxZoom: 15});
-            }
+            map_view.fit(feature.getGeometry().getExtent(), {maxZoom: 14});
         }
     }
 
@@ -672,7 +416,7 @@ export class GeoengineRenderer extends Component {
     }
 
     /**
-     * When you click on the open button, it calls the controller's
+     * When you click on the arrow button, it calls the controller's
      * openRecord method.
      */
     onInfoBoxClicked() {
@@ -786,13 +530,13 @@ export class GeoengineRenderer extends Component {
 
     async renderVectorLayers() {
         const data = this.props.data.records;
-        const vectorLayers = await this.createVectorLayers(data);
-        this.vectorLayersResult = await Promise.all(vectorLayers);
         this.map.getLayers().forEach((layer) => {
             if (layer.get("title") === "Overlays") {
                 this.map.removeLayer(layer);
             }
         });
+        const vectorLayers = await this.createVectorLayers(data);
+        this.vectorLayersResult = await Promise.all(vectorLayers);
         this.overlaysGroup = new ol.layer.Group({
             title: "Overlays",
             layers: this.vectorLayersResult,
@@ -813,11 +557,18 @@ export class GeoengineRenderer extends Component {
      * Adapts the zoom according to the result obtained.
      */
     updateZoom() {
-        if (this.state.isFit) {
-            this.map.getView().setZoom(localStorage.getItem("ol-zoom"));
-        } else if (this.props.data.records.length) {
-            this.getOriginalZoom();
-            this.state.isFit = true;
+        if (this.props.data.records.length) {
+            var extent = this.vectorLayersResult
+                .find((res) => res.values_.visible === true)
+                .getSource()
+                .getExtent();
+            var infinite_extent = [Infinity, Infinity, -Infinity, -Infinity];
+            if (extent !== infinite_extent) {
+                var map_view = this.map.getView();
+                if (map_view) {
+                    map_view.fit(extent, {maxZoom: 15});
+                }
+            }
         }
     }
 
@@ -938,7 +689,7 @@ export class GeoengineRenderer extends Component {
             views: [[false, view]],
         });
         const {ArchParser, Model} = viewRegistry.get(view);
-        this.archInfo = new ArchParser().parse(views[view].arch, relatedModels, model);
+        const archInfo = new ArchParser().parse(views[view].arch, relatedModels, model);
 
         if (model === "geoengine.vector.layer") {
             const notAllowedField = Object.keys(fields).filter(
@@ -949,13 +700,14 @@ export class GeoengineRenderer extends Component {
             );
             notAllowedField.forEach((field) => {
                 delete field[field];
-                delete this.archInfo.activeFields[field];
+                delete archInfo.activeFields[field];
             });
         }
         const searchParams = {
-            activeFields: this.archInfo.activeFields,
+            activeFields: archInfo.activeFields,
             resModel: model,
             fields: fields,
+            limit: 10000,
         };
         if (model === "geoengine.vector.layer") {
             this.vectorModel = new RelationalModel(
@@ -965,12 +717,16 @@ export class GeoengineRenderer extends Component {
             );
             await this.vectorModel.load();
         } else {
-            this.model = new Model(this.env, searchParams, this.services);
-            await this.model.load();
+            const toLoadModel = new Model(this.env, searchParams, this.services);
+            await toLoadModel.load().then(() => {
+                if (this.models.find((e) => e.model.resModel === model) === undefined) {
+                    this.models.push({model: toLoadModel.root, archInfo});
+                }
+            });
         }
     }
 
-    addFeatureToSource(data, cfg, vectorSource) {
+    addFeatureToSource(data, cfg) {
         data.forEach((item) => {
             var attributes =
                 item._values === undefined ? _.clone(item) : _.clone(item._values);
@@ -1242,13 +998,8 @@ export class GeoengineRenderer extends Component {
 
 GeoengineRenderer.template = "base_geoengine.GeoengineRenderer";
 GeoengineRenderer.props = {
-    isSavedOrDiscarded: {type: Boolean, optional: false},
     archInfo: {type: Object, optional: false},
     data: {type: Object, optional: false},
     openRecord: {type: Function, optional: false},
-    editable: {type: Boolean, optional: true},
-    updateRecord: {type: Function, optional: false},
-    onClickDiscard: {type: Function, optional: false},
-    createRecord: {type: Function, optional: false},
 };
 GeoengineRenderer.components = {LayersPanel, GeoengineRecord, RecordsPanel};
