@@ -66,7 +66,7 @@ Object.assign(DomainSelectorNumberFieldExtend, {
             "set",
             "not set",
         ].map((key) => dso.get(key));
-        return addOperators.concat(operators);
+        return operators.concat(addOperators);
     },
 });
 dsf.remove("integer");
