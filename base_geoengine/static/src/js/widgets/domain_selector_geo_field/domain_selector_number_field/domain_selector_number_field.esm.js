@@ -10,10 +10,10 @@ import {DomainSelectorFieldInput} from "@web/core/domain_selector/fields/domain_
 import {DomainSelectorFieldInputForActiveIds} from "../domain_selector_field_input_for_active_ids/domain_selector_field_input_for_active_ids.esm";
 import {DomainSelectorFieldInputWithTags} from "@web/core/domain_selector/fields/domain_selector_field_input_with_tags";
 import {onDidChange} from "../domain_selector_operators.esm";
-const dso = registry.category("domain_selector/operator");
-const dsf = registry.category("domain_selector/fields");
 
-const {Component} = owl;
+const dso = registry.category("domain_selector/operator");
+
+import {Component} from "@odoo/owl";
 
 /**
  * This method is extended from DomainSelectorNumberField to add some operators
@@ -69,9 +69,6 @@ Object.assign(DomainSelectorNumberFieldExtend, {
         return operators.concat(addOperators);
     },
 });
-dsf.remove("integer");
-dsf.remove("float");
-dsf.remove("monetary");
-dsf.add("integer", DomainSelectorNumberFieldExtend);
-dsf.add("float", DomainSelectorNumberFieldExtend);
-dsf.add("monetary", DomainSelectorNumberFieldExtend);
+registry
+    .category("domain_selector/fields")
+    .add("integer", DomainSelectorNumberFieldExtend, {force: true});

@@ -12,12 +12,10 @@ import {DomainSelectorGeoFieldDialog} from "../../../widgets/domain_selector_geo
 import {FormViewDialog} from "@web/views/view_dialogs/form_view_dialog";
 import {useSortable} from "@web/core/utils/sortable";
 
-const {Component, onWillStart, useState, useRef} = owl;
+import {Component, onWillStart, useRef, useState} from "@odoo/owl";
 
 export class LayersPanel extends Component {
     setup() {
-        super.setup();
-
         this.orm = useService("orm");
         this.actionService = useService("action");
         this.view = useService("view");
@@ -32,16 +30,7 @@ export class LayersPanel extends Component {
          * in the database and add them to the store.
          */
         onWillStart(async () => {
-            this.isGeoengineAdmin = await this.user.hasGroup(
-                "base_geoengine.group_geoengine_admin"
-            );
-            const result = await this.orm.call(
-                this.props.model,
-                "get_geoengine_layers",
-                []
-            );
-            this.state.geoengineLayers = result;
-
+            await Promise.all([this.loadIsAdmin(), this.loadLayers()]);
             /**
              * Get resId of records to allow resequence of elements.
              */
@@ -70,6 +59,22 @@ export class LayersPanel extends Component {
             },
             onDrop: (params) => this.sort(dataRowId, params),
         });
+    }
+
+    async loadIsAdmin() {
+        return this.user
+            .hasGroup("base_geoengine.group_geoengine_admin")
+            .then((result) => {
+                this.isGeoengineAdmin = result;
+            });
+    }
+
+    async loadLayers() {
+        return this.orm
+            .call(this.props.model, "get_geoengine_layers", [])
+            .then((result) => {
+                this.state.geoengineLayers = result;
+            });
     }
 
     async sort(dataRowId, {previous}) {
@@ -146,6 +151,11 @@ export class LayersPanel extends Component {
      * @param {*} value
      */
     async onVectorChange(layer, action, value) {
+        vectorLayersStore.vectorsLayers.forEach((layer) => {
+            layer.onDomainChanged = false;
+            layer.onLayerChanged = false;
+            layer.onSequenceChanged = false;
+        });
         const vectorLayer = vectorLayersStore.getVector(layer.resId);
         switch (action) {
             case "onDomainChanged":

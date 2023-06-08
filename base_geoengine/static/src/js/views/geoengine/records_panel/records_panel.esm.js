@@ -6,12 +6,16 @@
 import {useService} from "@web/core/utils/hooks";
 import {SearchBarRecords} from "./search_bar_records/search_bar_records.esm";
 
-const {Component, useState, onWillRender, onWillStart, onWillUpdateProps} = owl;
+import {
+    Component,
+    onWillRender,
+    onWillStart,
+    onWillUpdateProps,
+    useState,
+} from "@odoo/owl";
 
 export class RecordsPanel extends Component {
     setup() {
-        super.setup();
-
         this.state = useState({
             isFolded: false,
             isClicked: 0,

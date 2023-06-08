@@ -4,7 +4,7 @@
  * Copyright 2023 ACSONE SA/NV
  */
 
-import {loadCSS, loadJS, templates} from "@web/core/assets";
+import {loadBundle, templates} from "@web/core/assets";
 import {GeoengineRecord} from "../geoengine_record/geoengine_record.esm";
 import {LayersPanel} from "../layers_panel/layers_panel.esm";
 import {RecordsPanel} from "../records_panel/records_panel.esm";
@@ -14,17 +14,16 @@ import {useService} from "@web/core/utils/hooks";
 import {registry} from "@web/core/registry";
 import {RelationalModel} from "@web/views/relational_model";
 import {evaluateExpr} from "@web/core/py_js/py";
-
-const {
+import {
     Component,
-    onWillStart,
+    mount,
     onMounted,
+    onPatched,
+    onWillStart,
     onWillUpdateProps,
     reactive,
-    mount,
     useState,
-    onPatched,
-} = owl;
+} from "@odoo/owl";
 
 /* CONSTANTS */
 const DEFAULT_BEGIN_COLOR = "#FFFFFF";
@@ -33,10 +32,15 @@ const DEFAULT_MIN_SIZE = 5;
 const DEFAULT_MAX_SIZE = 15;
 // For choroplets only
 const DEFAULT_NUM_CLASSES = 5;
+const LEGEND_MAX_ITEMS = 10;
 
 export class GeoengineRenderer extends Component {
     setup() {
-        super.setup();
+        this.state = useState({selectedFeatures: [], isModified: false, isFit: false});
+        this.models = [];
+        this.cfg_models = [];
+        this.vectorModel = {};
+        this.legends = [];
 
         // When a change is issued in the rasterLayersStore or the vectorLayersStore the LayerChanged method is called.
         this.rasterLayersStore = reactive(rasterLayersStore, () =>
@@ -45,8 +49,10 @@ export class GeoengineRenderer extends Component {
         this.vectorLayersStore = reactive(vectorLayersStore, () =>
             this.onVectorLayerChanged()
         );
+
         this.orm = useService("orm");
         this.view = useService("view");
+        this.user = useService("user");
 
         // For related model we need to load all the service needed by RelationalModel
         this.services = {};
@@ -56,8 +62,14 @@ export class GeoengineRenderer extends Component {
 
         onWillStart(async () =>
             Promise.all([
-                this.loadJsFiles(),
-                this.loadCssFiles(),
+                loadBundle({
+                    jsLibs: [
+                        "/base_geoengine/static/lib/ol-7.2.2/ol.js",
+                        "/base_geoengine/static/lib/chromajs-2.4.2/chroma.js",
+                        "/base_geoengine/static/lib/geostats-2.0.0/geostats.js",
+                    ],
+                    cssLibs: ["/base_geoengine/static/lib/geostats-2.0.0/geostats.css"],
+                }),
                 this.loadVectorModel(),
                 (this.isGeoengineAdmin = await this.user.hasGroup(
                     "base_geoengine.group_geoengine_admin"
@@ -77,6 +89,7 @@ export class GeoengineRenderer extends Component {
         });
 
         onWillUpdateProps((nextProps) => {
+            document.getElementById("map-legend").textContent = "";
             if (nextProps.isSavedOrDiscarded) {
                 this.state.isModified = false;
             }
@@ -87,25 +100,6 @@ export class GeoengineRenderer extends Component {
                 this.renderVectorLayers();
             }
         });
-    }
-
-    async loadJsFiles() {
-        const files = [
-            "/base_geoengine/static/lib/ol-7.2.2/ol.js",
-            "/base_geoengine/static/lib/chromajs-2.4.2/chroma.js",
-            "/base_geoengine/static/lib/geostats-2.0.0/geostats.js",
-        ];
-        for (const file of files) {
-            await loadJS(file);
-        }
-    }
-
-    async loadCssFiles() {
-        await Promise.all(
-            ["/base_geoengine/static/lib/geostats-2.0.0/geostats.css"].map((file) =>
-                loadCSS(file)
-            )
-        );
     }
 
     async loadVectorModel() {
@@ -665,6 +659,14 @@ export class GeoengineRenderer extends Component {
                     if (vector.name === layer.get("title")) {
                         if (vector.onVisibleChanged) {
                             this.onVisibleChanged(vector, layer);
+                            const legend = document.getElementById(
+                                `legend-${vector.resId}`
+                            );
+                            if (legend !== null) {
+                                void (vector.isVisible
+                                    ? (legend.style.display = "block")
+                                    : (legend.style.display = "none"));
+                            }
                         }
                         if (vector.onDomainChanged) {
                             this.onVectorLayerModelDomainChanged(vector, layer);
@@ -696,12 +698,22 @@ export class GeoengineRenderer extends Component {
      */
     async onLayerChanged(vector, layer) {
         layer.setSource(null);
-        const data = this.props.data.records;
-        const styleInfo = this.styleVectorLayer(vector, data);
-        layer.setStyle(styleInfo.style);
+        const element = document.getElementById(`legend-${vector.resId}`);
+        if (element !== null) {
+            element.remove();
+        }
         if (vector.model) {
-            await this.useRelatedModel(vector, layer);
+            this.cfg_models.push(vector.model);
+            const fields_to_read = [vector.geo_field_id[1]];
+            if (vector.attribute_field_id) {
+                fields_to_read.push(vector.attribute_field_id[1]);
+            }
+            const data = await this.getModelData(vector, fields_to_read);
+            this.styleVectorLayerAndLegend(vector, data, layer);
+            this.useRelatedModel(vector, layer, data);
         } else {
+            const data = this.props.data.records;
+            this.styleVectorLayerAndLegend(vector, data, layer);
             this.addSourceToLayer(data, vector, layer);
         }
     }
@@ -720,23 +732,21 @@ export class GeoengineRenderer extends Component {
      * @param {*} cfg
      * @param {*} layer
      */
-    onVectorLayerModelDomainChanged(cfg, layer) {
+    async onVectorLayerModelDomainChanged(vector, layer) {
         layer.setSource(null);
-        const fields_to_read = [cfg.geo_field_id[1]];
-        if (cfg.attribute_field_id) {
-            fields_to_read.push(cfg.attribute_field_id[1]);
+        const element = document.getElementById(`legend-${vector.resId}`);
+        if (element !== null) {
+            element.remove();
         }
-        const domain = this.evalModelDomain(cfg);
-        this.orm.searchRead(cfg.model, [domain][0], fields_to_read).then((res) => {
-            const vectorSource = new ol.source.Vector();
-            this.addFeatureToSource(res, cfg, vectorSource);
-            layer.setSource(vectorSource);
-        });
+        const fields_to_read = this.getFieldsToRead(vector);
+        const data = await this.getModelData(vector, fields_to_read);
+        this.useRelatedModel(vector, layer, data);
+        const styleInfo = this.styleVectorLayer(vector, data);
+        this.initLegend(styleInfo, vector);
     }
 
     async renderVectorLayers() {
-        const data = this.props.data.records;
-        const vectorLayers = await this.createVectorLayers(data);
+        const vectorLayers = await this.createVectorLayers();
         this.vectorLayersResult = await Promise.all(vectorLayers);
         this.map.getLayers().forEach((layer) => {
             if (layer.get("title") === "Overlays") {
@@ -771,29 +781,34 @@ export class GeoengineRenderer extends Component {
         }
     }
 
-    createVectorLayers(data) {
+    createVectorLayers() {
         return this.vectorLayersStore.vectorsLayers.map((layer) =>
-            this.createVectorLayer(layer, data)
+            this.createVectorLayer(layer)
         );
     }
 
-    async createVectorLayer(cfg, data) {
-        if (!data.length) {
-            return new ol.layer.Vector({
-                source: new ol.source.Vector(),
-                title: cfg.name,
-            });
-        }
-        const styleInfo = this.styleVectorLayer(cfg, data);
+    async createVectorLayer(cfg) {
         var lv = new ol.layer.Vector({
             title: cfg.name,
             active_on_startup: cfg.active_on_startup,
-            style: styleInfo.style,
         });
         // If we want to use an other model in the layer
         if (cfg.model) {
-            await this.useRelatedModel(cfg, lv);
+            this.cfg_models.push(cfg.model);
+            const fields_to_read = this.getFieldsToRead(cfg);
+            await this.loadView(cfg.model, "geoengine");
+            const data = await this.getModelData(cfg, fields_to_read);
+            this.styleVectorLayerAndLegend(cfg, data, lv);
+            this.useRelatedModel(cfg, lv, data);
         } else {
+            const data = this.props.data.records;
+            if (!data.length) {
+                return new ol.layer.Vector({
+                    source: new ol.source.Vector(),
+                    title: cfg.name,
+                });
+            }
+            this.styleVectorLayerAndLegend(cfg, data, lv);
             this.addSourceToLayer(data, cfg, lv);
         }
         if (cfg.layer_opacity) {
@@ -803,24 +818,54 @@ export class GeoengineRenderer extends Component {
         return lv;
     }
 
+    getFieldsToRead(cfg) {
+        const fields_to_read = [cfg.geo_field_id[1]];
+        if (cfg.attribute_field_id) {
+            fields_to_read.push(cfg.attribute_field_id[1]);
+        }
+        return fields_to_read;
+    }
+
+    async getModelData(cfg, fields_to_read) {
+        const domain = this.evalModelDomain(cfg);
+        let data = await this.orm.searchRead(cfg.model, [domain][0], fields_to_read);
+        const modelsRecords = this.models.find((e) => e.model.resModel === cfg.model)
+            .model.records;
+        data = data.map((data) => modelsRecords.find((rec) => rec.resId === data.id));
+        return data;
+    }
+
+    styleVectorLayerAndLegend(cfg, data, lv) {
+        const styleInfo = this.styleVectorLayer(cfg, data);
+        this.initLegend(styleInfo, cfg);
+        lv.setStyle(styleInfo.style);
+    }
+
+    initLegend(styleInfo, cfg) {
+        if (document.getElementById(`legend-${cfg.resId}`) === null) {
+            const parentContainer = document.getElementById("map-legend");
+            const containerLegend = document.createElement("div");
+            if (styleInfo.legend !== "") {
+                containerLegend.innerHTML = styleInfo.legend;
+                containerLegend.setAttribute("id", `legend-${cfg.resId}`);
+                containerLegend.className = "legend";
+                if (cfg.isVisible) {
+                    containerLegend.style.display = "block";
+                }
+                parentContainer.appendChild(containerLegend);
+            }
+        }
+    }
+
     /**
      * This method is called when a layer uses another model.
      * @param {*} cfg
      * @param {*} lv
      */
-    async useRelatedModel(cfg, lv) {
-        this.cfg_models.push(cfg.model);
-        const fields_to_read = [cfg.geo_field_id[1]];
-        if (cfg.attribute_field_id) {
-            fields_to_read.push(cfg.attribute_field_id[1]);
-        }
-        const domain = this.evalModelDomain(cfg);
-        await this.loadView(cfg.model, "geoengine");
-        this.orm.searchRead(cfg.model, [domain][0], fields_to_read).then((res) => {
-            const vectorSource = new ol.source.Vector();
-            this.addFeatureToSource(res, cfg, vectorSource);
-            lv.setSource(vectorSource);
-        });
+    useRelatedModel(cfg, lv, res) {
+        const vectorSource = new ol.source.Vector();
+        this.addFeatureToSource(res, cfg, vectorSource);
+        lv.setSource(vectorSource);
     }
 
     /**
@@ -850,11 +895,8 @@ export class GeoengineRenderer extends Component {
                 cfg.model_domain.slice(0, start) + cfg.model_domain.slice(start + 2);
             const end = newDomain.search("ACTIVE_IDS") + 10;
             newDomain = newDomain.slice(0, end) + newDomain.slice(end + 2);
-            if (newDomain.includes("in active_ids")) {
-                newDomain = newDomain.replace("in active_ids", "in");
-            } else if (newDomain.includes("not in active_ids")) {
-                newDomain = newDomain.replace("not in active_ids", "not in");
-            }
+            newDomain = newDomain.replace("not in active_ids", "not in");
+            newDomain = newDomain.replace("in active_ids", "in");
             domain = evaluateExpr(newDomain, {
                 ACTIVE_IDS: this.props.data.records.map(
                     (datapoint) => `${datapoint.resId}`
@@ -1012,7 +1054,10 @@ export class GeoengineRenderer extends Component {
                 .map((color) => chroma(color).alpha(opacity).css());
         }
         const styles_map = this.createStylesWithColors(colors);
-
+        let legend = null;
+        if (vals.length <= LEGEND_MAX_ITEMS) {
+            legend = serie.getHtmlLegend(colors, cfg.name, 1);
+        }
         return {
             style: (feature) => {
                 const value = feature.get("attributes")[indicator];
@@ -1021,9 +1066,11 @@ export class GeoengineRenderer extends Component {
                 if (label_text === false) {
                     label_text = "";
                 }
+                console.log(feature.get("attributes").id);
                 styles_map[colors[color_idx]][0].text_.text_ = label_text.toString();
                 return styles_map[colors[color_idx]];
             },
+            legend,
         };
     }
 
@@ -1066,6 +1113,7 @@ export class GeoengineRenderer extends Component {
                 var value = feature.get("attributes")[indicator];
                 return styles_map[value];
             },
+            legend: "",
         };
     }
 
@@ -1098,6 +1146,7 @@ export class GeoengineRenderer extends Component {
                 styles[0].text_.text_ = label_text;
                 return styles;
             },
+            legend: "",
         };
     }
     createStyleText() {

@@ -4,22 +4,29 @@
  * Copyright 2023 ACSONE SA/NV
  */
 
-import {loadJS} from "@web/core/assets";
+import {loadBundle} from "@web/core/assets";
 import {registry} from "@web/core/registry";
 import {useService} from "@web/core/utils/hooks";
 import {standardFieldProps} from "@web/views/fields/standard_field_props";
 
-const {Component, onWillStart, onMounted, onRendered, useEffect} = owl;
+import {Component, onMounted, onRendered, onWillStart, useEffect} from "@odoo/owl";
 
 export class FieldGeoEngineEditMap extends Component {
     setup() {
-        super.setup();
-
         // Allows you to have a unique id if you put the same field in the view several times
         this.id = `map_${Date.now()}`;
         this.orm = useService("orm");
 
-        onWillStart(() => Promise.all([this.loadJsFiles()]));
+        onWillStart(() =>
+            Promise.all([
+                loadBundle({
+                    jsLibs: [
+                        "/base_geoengine/static/lib/ol-7.2.2/ol.js",
+                        "/base_geoengine/static/lib/chromajs-2.4.2/chroma.js",
+                    ],
+                }),
+            ])
+        );
 
         // Is executed when component is mounted.
         onMounted(async () => {
@@ -51,16 +58,6 @@ export class FieldGeoEngineEditMap extends Component {
         onRendered(() => {
             this.setValue(this.props.value);
         });
-    }
-
-    async loadJsFiles() {
-        const files = [
-            "/base_geoengine/static/lib/ol-7.2.2/ol.js",
-            "/base_geoengine/static/lib/chromajs-2.4.2/chroma.js",
-        ];
-        for (const file of files) {
-            await loadJS(file);
-        }
     }
 
     /**
