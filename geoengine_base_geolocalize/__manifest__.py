@@ -21,7 +21,7 @@
     "name": "Geospatial support for base_geolocalize",
     "version": "16.0.1.0.0",
     "category": "GeoBI",
-    "author": "ACSONE SA/NV, Odoo Community Association (OCA), Contagra",
+    "author": "ACSONE SA/NV, Odoo Community Association (OCA), Agrista",
     "license": "AGPL-3",
     "website": "http://www.acsone.eu",
     "depends": [

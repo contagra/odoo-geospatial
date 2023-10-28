@@ -4,7 +4,7 @@
     'name': 'Geospatial support of partners',
     'version': '16.0.1.0.1',
     'category': 'GeoBI',
-    'author': 'Camptocamp, Odoo Community Association (OCA), Contagra',
+    'author': 'Camptocamp, Odoo Community Association (OCA), Agrista',
     'license': 'AGPL-3',
     'website': 'https://github.com/OCA/geospatial',
     'depends': [
