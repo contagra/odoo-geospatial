@@ -10,7 +10,7 @@
                 <attribute name="string">Location</attribute>
             </page>
             <xpath expr="//page[@name='geo_location']" position="inside">
-                <field name="location" widget="geo_edit_map"
+                <field name="location"
                        groups="base_geoengine.group_geoengine_user,base_geoengine.group_geoengine_admin"/>
             </xpath>
         </field>

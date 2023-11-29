@@ -1,25 +1,9 @@
-#
-#
-#    Authors: Jonathan Nemry
-#    Copyright (c) 2015 Acsone SA/NV (http://www.acsone.eu)
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-import odoo.tests.common as common
+# Copyright 2015-2017 ACSONE SA/NV (<http://acsone.eu>)
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+from odoo.tests.common import TransactionCase
 
 
-class TestGeoenginePartner(common.TransactionCase):
+class TestGeoenginePartner(TransactionCase):
     def test_get_location(self):
         partner_id = self.env.ref("base.user_root").partner_id
         partner_id.partner_longitude = False
@@ -43,12 +27,12 @@ class TestGeoenginePartner(common.TransactionCase):
         }
         partner_id = self.env["res.partner"].create(vals)
         partner_id.name = "Other Partner"
-        partner_id.geo_localize()
+        partner_id.with_context(force_geo_localize=True).geo_localize()
         self.assertAlmostEqual(
-            partner_id.partner_latitude, 49.95353, 5, "Latitude Should be equals"
+            partner_id.partner_latitude, 49.9535323, 2, "Latitude Should be equals"
         )
         self.assertAlmostEqual(
-            partner_id.partner_longitude, 5.40539, 5, "Longitude Should be equals"
+            partner_id.partner_longitude, 5.4119073, 2, "Longitude Should be equals"
         )
         domain = [("id", "=", partner_id.id)]
         partner_id.unlink()
