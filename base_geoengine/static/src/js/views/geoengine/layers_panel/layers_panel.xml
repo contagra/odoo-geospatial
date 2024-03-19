@@ -82,7 +82,7 @@
                             t-as="layer"
                             t-key="layer.id"
                         >
-                            <div class="form-check o_radio_item" aria-atomic="true">
+                            <div class="form-check o_radio_item d-flex align-items-center" aria-atomic="true">
                                 <input
                                     type="radio"
                                     t-att-checked="layer.isVisible"
@@ -93,9 +93,10 @@
                                     t-on-change="() => this.onRasterChange(layer)"
                                 />
                                 <label
-                                    class="form-check-label o_form_label"
+                                    class="form-check-label o_form_label ml-1"
                                     t-att-for="layer.name"
                                     t-esc="layer.name"
+                                    style="margin-left: 6px"
                                 />
                                 <button
                                     t-if="isGeoengineAdmin"
