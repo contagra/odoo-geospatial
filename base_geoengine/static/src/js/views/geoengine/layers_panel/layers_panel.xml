@@ -41,7 +41,7 @@
                                         value="vector.isVisible"
                                         t-on-change="() => this.onVectorChange(vector, 'onVisibleChanged', !vector.isVisible)"
                                     >
-                                        <t t-esc="vector.name" />
+                                        <t t-out="vector.name" />
                                     </CheckBox>
                                     <button
                                         t-if="vector.model_id !== false"
@@ -95,7 +95,7 @@
                                 <label
                                     class="form-check-label o_form_label ml-1"
                                     t-att-for="layer.name"
-                                    t-esc="layer.name"
+                                    t-out="layer.name"
                                     style="margin-left: 6px"
                                 />
                                 <button
@@ -111,7 +111,7 @@
                 </section>
             </div>
             <div t-else="" class="d-flex justify-content-center text-900">
-                <span class="title-panel">Layers (<t t-esc="numberOfLayers" />)</span>
+                <span class="title-panel">Layers (<t t-out="numberOfLayers" />)</span>
             </div>
         </div>
     </t>
