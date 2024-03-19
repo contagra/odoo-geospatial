@@ -4,6 +4,7 @@
  * Copyright 2023 ACSONE SA/NV
  */
 
+import {session} from "@web/session";
 import {loadBundle, templates} from "@web/core/assets";
 import {GeoengineRecord} from "../geoengine_record/geoengine_record.esm";
 import {LayersPanel} from "../layers_panel/layers_panel.esm";
@@ -74,6 +75,7 @@ export class GeoengineRenderer extends Component {
                         "/base_geoengine/static/lib/ol-7.2.2/ol.js",
                         "/base_geoengine/static/lib/chromajs-2.4.2/chroma.js",
                         "/base_geoengine/static/lib/geostats-2.0.0/geostats.js",
+                        "/base_geoengine/static/lib/ol-mapbox-style-10.5.0/olms.js",
                     ],
                     cssLibs: ["/base_geoengine/static/lib/geostats-2.0.0/geostats.css"],
                 }),
