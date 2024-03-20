@@ -27,7 +27,7 @@ class ResPartner(models.Model):
                 )
 
     location = fields.GeoPoint(
-        store=True, compute="_compute_location", inverse="_inverse_location"
+        store=True, compute="_compute_location", inverse="_inverse_location", srid=4326
     )
 
     def _inverse_location(self):
