@@ -562,33 +562,29 @@ export class GeoengineRenderer extends Component {
         const feature = features.item(0);
         if (feature !== undefined) {
             const popup = this.getPopup();
-            if (feature !== undefined) {
-                var attributes = feature.get("attributes");
-
-                if (this.cfg_models.includes(feature.get("model"))) {
-                    const model = this.models.find(
-                        (el) => el.model.resModel === feature.get("model")
-                    );
-                    this.mountGeoengineRecord({
-                        popup,
-                        archInfo: model.archInfo,
-                        templateDocs: model.archInfo.templateDocs,
-                        model: model.model,
-                        attributes,
-                    });
-                } else {
-                    this.mountGeoengineRecord({
-                        popup,
-                        archInfo: this.props.archInfo,
-                        templateDocs: this.props.archInfo.templateDocs,
-                        model: this.props.data,
-                        attributes,
-                    });
-                }
-
-                var coord = ol.extent.getCenter(feature.getGeometry().getExtent());
-                this.overlay.setPosition(coord);
+            let attributes = feature.get("attributes");
+            if (this.cfg_models.includes(feature.get("model"))) {
+                const model = this.models.find(
+                    (el) => el.model.resModel === feature.get("model")
+                );
+                this.mountGeoengineRecord({
+                    popup,
+                    archInfo: model.archInfo,
+                    templateDocs: model.archInfo.templateDocs,
+                    model: model.model,
+                    attributes,
+                });
+            } else {
+                this.mountGeoengineRecord({
+                    popup,
+                    archInfo: this.props.archInfo,
+                    templateDocs: this.props.archInfo.templateDocs,
+                    model: this.props.data,
+                    attributes,
+                });
             }
+            let coord = ol.extent.getCenter(feature.getGeometry().getExtent());
+            this.overlay.setPosition(coord);
         } else {
             this.hidePopup();
         }
