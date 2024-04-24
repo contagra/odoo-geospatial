@@ -14,7 +14,7 @@ import {registry} from "@web/core/registry";
 
 export const geoengineView = {
     type: "geoengine",
-    display_name: _lt("Geoengine"),
+    display_name: _lt("Map"),
     icon: "fa fa-map-o",
     multiRecord: true,
     ArchParser: GeoengineArchParser,

@@ -184,7 +184,7 @@ export class FieldGeoEngineEditMap extends Component {
             if (extent !== infinite_extent) {
                 var map_view = this.map.getView();
                 if (map_view) {
-                    map_view.fit(extent, {maxZoom: this.defaultZoom || 15});
+                    map_view.fit(extent, {maxZoom: this.defaultZoom || 19});
                 }
             }
         }
@@ -420,22 +420,27 @@ export const fieldGeoEngineEditMapMultiPolygon = {
 
 export const fieldGeoEngineEditMapPolygon = {
     component: FieldGeoEngineEditMapPolygon,
+    extractProps,
 };
 
 export const fieldGeoEngineEditMapPoint = {
     component: FieldGeoEngineEditMapPoint,
+    extractProps,
 };
 
 export const fieldGeoEngineEditMapMultiPoint = {
     component: FieldGeoEngineEditMapMultiPoint,
+    extractProps,
 };
 
 export const fieldGeoEngineEditMapLine = {
     component: FieldGeoEngineEditMapLine,
+    extractProps,
 };
 
 export const fieldGeoEngineEditMapMultiLine = {
     component: FieldGeoEngineEditMapMultiLine,
+    extractProps,
 };
 
 registry.category("fields").add("geo_multi_polygon", fieldGeoEngineEditMapMultiPolygon);

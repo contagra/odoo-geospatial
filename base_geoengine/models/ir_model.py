@@ -6,7 +6,7 @@ from odoo import fields, models
 from odoo.addons import base
 
 if "geoengine" not in base.models.ir_actions.VIEW_TYPES:
-    base.models.ir_actions.VIEW_TYPES.append(("geoengine", "Geoengine"))
+    base.models.ir_actions.VIEW_TYPES.append(("geoengine", "Map"))
 
 GEO_TYPES = [
     ("geo_polygon", "geo_polygon"),

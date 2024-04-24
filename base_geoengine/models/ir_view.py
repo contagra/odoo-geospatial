@@ -8,7 +8,7 @@ class IrUIView(models.Model):
     _inherit = "ir.ui.view"
 
     type = fields.Selection(
-        selection_add=[("geoengine", "GeoEngine")],
+        selection_add=[("geoengine", "Map")],
         ondelete={"geoengine": "cascade"},
     )
 
