@@ -4,18 +4,17 @@
  * Copyright 2023 ACSONE SA/NV
  */
 
+import {Component, onMounted, onRendered, onWillStart, useEffect} from "@odoo/owl";
 import {session} from "@web/session";
 import {loadBundle} from "@web/core/assets";
 import {registry} from "@web/core/registry";
-import {useService} from "@web/core/utils/hooks";
 import {standardFieldProps} from "@web/views/fields/standard_field_props";
-
-import {Component, onMounted, onRendered, onWillStart, useEffect} from "@odoo/owl";
+import {useService} from "@web/core/utils/hooks";
 
 export class FieldGeoEngineEditMap extends Component {
     setup() {
         // Allows you to have a unique id if you put the same field in the view several times
-        this.id = `map_${Date.now()}`;
+        this.id = `map_${this.props.id}`;
         this.orm = useService("orm");
 
         onWillStart(() =>
@@ -64,12 +63,13 @@ export class FieldGeoEngineEditMap extends Component {
 
     /**
      * Displays geo data on the map using the collection of features.
+     * @returns {*}
      */
     createVectorLayer() {
         this.features = new ol.Collection();
         this.source = new ol.source.Vector({features: this.features});
-        const colorHex = this.props.color !== undefined ? this.props.color : "#ee9900";
-        const opacity = this.props.opacity !== undefined ? this.props.opacity : 1;
+        const colorHex = this.props.color === undefined ? "#ee9900" : this.props.color;
+        const opacity = this.props.opacity === undefined ? 1 : this.props.opacity;
         const color = chroma(colorHex).alpha(opacity).css();
         const fill = new ol.style.Fill({
             color: color,
@@ -213,16 +213,10 @@ export class FieldGeoEngineEditMap extends Component {
              * If the value to be displayed is equal to the one passed in props, do nothing
              * otherwise clear the map and display the new value.
              */
-            if (this.displayValue == value) return;
+            if (this.displayValue === value) return;
             this.displayValue = value;
-            const projection = {
-                featureProjection: this.projection,
-                dataProjection: 'EPSG:' + this.srid
-            };
             var ft = new ol.Feature({
-                // geometry: new ol.format.GeoJSON().readGeometry(value),
-                geometry: new ol.format.GeoJSON().readGeometry(value, projection),
-                labelPoint: new ol.format.GeoJSON().readGeometry(value, projection),
+                geometry: this.format.readGeometry(value),
             });
             this.source.clear();
             this.source.addFeature(ft);
@@ -339,10 +333,9 @@ export class FieldGeoEngineEditMap extends Component {
     }
 }
 
-FieldGeoEngineEditMap
-    .template = "base_geoengine.FieldGeoEngineEditMap";
-FieldGeoEngineEditMap
-    .props = {
+FieldGeoEngineEditMap.template = "base_geoengine.FieldGeoEngineEditMap";
+
+FieldGeoEngineEditMap.props = {
     ...standardFieldProps,
     opacity: {type: Number, optional: true},
     color: {type: String, optional: true},
@@ -355,8 +348,21 @@ FieldGeoEngineEditMap
     resolutions: {type: String, optional: true},
 };
 
-export class FieldGeoEngineEditMapMultiPolygon
-    extends FieldGeoEngineEditMap {
+FieldGeoEngineEditMap.extractProps = (attrs) => {
+    return {
+        opacity: attrs.options.opacity,
+        color: attrs.options.color,
+        background: attrs.options.background,
+        styleUrl: attrs.options.styleUrl,
+        matrixSet: attrs.options.matrixSet,
+        formatSuffix: attrs.options.formatSuffix,
+        requestEncoding: attrs.options.requestEncoding,
+        projection: attrs.options.projection,
+        resolutions: attrs.options.resolutions,
+    };
+};
+
+export class FieldGeoEngineEditMapMultiPolygon extends FieldGeoEngineEditMap {
     setup() {
         this.geoType = "MultiPolygon";
         super.setup();
@@ -398,49 +404,34 @@ export class FieldGeoEngineEditMapMultiLine extends FieldGeoEngineEditMap {
     }
 }
 
-function extractProps({attrs, options}) {
-    return {
-        opacity: options.opacity,
-        color: options.color,
-        background: options.background,
-        styleUrl: options.styleUrl,
-        matrixSet: options.matrixSet,
-        formatSuffix: options.formatSuffix,
-        requestEncoding: options.requestEncoding,
-        projection: options.projection,
-        resolutions: options.resolutions,
-    };
-}
-
-
 export const fieldGeoEngineEditMapMultiPolygon = {
     component: FieldGeoEngineEditMapMultiPolygon,
-    extractProps,
+    extractProps: (attrs) => FieldGeoEngineEditMap.extractProps(attrs),
 };
 
 export const fieldGeoEngineEditMapPolygon = {
     component: FieldGeoEngineEditMapPolygon,
-    extractProps,
+    extractProps: (attrs) => FieldGeoEngineEditMap.extractProps(attrs),
 };
 
 export const fieldGeoEngineEditMapPoint = {
     component: FieldGeoEngineEditMapPoint,
-    extractProps,
+    extractProps: (attrs) => FieldGeoEngineEditMap.extractProps(attrs),
 };
 
 export const fieldGeoEngineEditMapMultiPoint = {
     component: FieldGeoEngineEditMapMultiPoint,
-    extractProps,
+    extractProps: (attrs) => FieldGeoEngineEditMap.extractProps(attrs),
 };
 
 export const fieldGeoEngineEditMapLine = {
     component: FieldGeoEngineEditMapLine,
-    extractProps,
+    extractProps: (attrs) => FieldGeoEngineEditMap.extractProps(attrs),
 };
 
 export const fieldGeoEngineEditMapMultiLine = {
     component: FieldGeoEngineEditMapMultiLine,
-    extractProps,
+    extractProps: (attrs) => FieldGeoEngineEditMap.extractProps(attrs),
 };
 
 registry.category("fields").add("geo_multi_polygon", fieldGeoEngineEditMapMultiPolygon);

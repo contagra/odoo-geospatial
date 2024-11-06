@@ -9,8 +9,8 @@ import {GeoengineCompiler} from "../geoengine_compiler.esm";
 import {INFO_BOX_ATTRIBUTE} from "../geoengine_arch_parser.esm";
 import {registry} from "@web/core/registry";
 import {useViewCompiler} from "@web/views/view_compiler";
-import {Component, onWillUpdateProps, useState} from "@odoo/owl";
-import { useService } from "@web/core/utils/hooks";
+import {Component, onWillUpdateProps} from "@odoo/owl";
+import {useService} from "@web/core/utils/hooks";
 
 const formatters = registry.category("formatters");
 
@@ -27,7 +27,7 @@ export class GeoengineRecord extends Component {
      */
     setup() {
         this.user = useService("user");
-        const { Compiler, templates } = this.props;
+        const {Compiler, templates} = this.props;
         const ViewCompiler = Compiler || this.constructor.Compiler;
 
         this.templates = useViewCompiler(ViewCompiler, templates);
@@ -60,7 +60,7 @@ export class GeoengineRecord extends Component {
             read_only_mode: this.props.readonly,
             selection_mode: this.props.forceGlobalClick,
             user_context: this.user.context,
-            __comp__: Object.assign(Object.create(this), { this: this }),
+            __comp__: Object.assign(Object.create(this), {this: this}),
         };
     }
 }

@@ -4,23 +4,6 @@
  * Copyright 2023 ACSONE SA/NV
  */
 
-import {session} from "@web/session";
-import {loadBundle, templates} from "@web/core/assets";
-import {GeoengineRecord} from "../geoengine_record/geoengine_record.esm";
-import {LayersPanel} from "../layers_panel/layers_panel.esm";
-import {RecordsPanel} from "../records_panel/records_panel.esm";
-import {rasterLayersStore} from "../../../raster_layers_store.esm";
-import {vectorLayersStore} from "../../../vector_layers_store.esm";
-import {useService} from "@web/core/utils/hooks";
-import {registry} from "@web/core/registry";
-import {RelationalModel} from "@web/model/relational_model/relational_model";
-import {evaluateExpr} from "@web/core/py_js/py";
-import {parseXML} from "@web/core/utils/xml";
-import {
-    addFieldDependencies,
-    extractFieldsFromArchInfo,
-} from "@web/model/relational_model/utils";
-import {useModel, useModelWithSampleData} from "@web/model/model";
 import {
     Component,
     mount,
@@ -31,6 +14,22 @@ import {
     reactive,
     useState,
 } from "@odoo/owl";
+import {session} from "@web/session";
+import {GeoengineRecord} from "../geoengine_record/geoengine_record.esm";
+import {LayersPanel} from "../layers_panel/layers_panel.esm";
+import {RecordsPanel} from "../records_panel/records_panel.esm";
+import {RelationalModel} from "@web/model/relational_model/relational_model";
+import {
+    addFieldDependencies,
+    extractFieldsFromArchInfo,
+} from "@web/model/relational_model/utils";
+import {evaluateExpr} from "@web/core/py_js/py";
+import {loadBundle, templates} from "@web/core/assets";
+import {parseXML} from "@web/core/utils/xml";
+import {rasterLayersStore} from "../../../raster_layers_store.esm";
+import {registry} from "@web/core/registry";
+import {useService} from "@web/core/utils/hooks";
+import {vectorLayersStore} from "../../../vector_layers_store.esm";
 
 /* CONSTANTS */
 const DEFAULT_BEGIN_COLOR = "#FFFFFF";
@@ -301,6 +300,7 @@ export class GeoengineRenderer extends Component {
                     return new ol.layer.Tile(layer_opt_mb);
                 default:
                     return undefined;
+
             }
         });
         return source.concat(backgroundLayers);
@@ -399,7 +399,7 @@ export class GeoengineRenderer extends Component {
             this.addSelectedClassToButton(button);
             this.removeModifyInteraction();
             this.removeSelectInteraction();
-            if (this.props.data.editedRecord !== null) {
+            if (this.props.data.editedRecord !== undefined) {
                 this.props.onClickDiscard();
             }
             if (this.drawInteraction === undefined) {
@@ -442,7 +442,7 @@ export class GeoengineRenderer extends Component {
             this.addSelectedClassToButton(button);
             this.removeDrawInteraction();
             this.removeModifyInteraction();
-            if (this.props.data.editedRecord !== null) {
+            if (this.props.data.editedRecord !== undefined) {
                 this.props.onClickDiscard();
             }
             if (
@@ -562,29 +562,33 @@ export class GeoengineRenderer extends Component {
         const feature = features.item(0);
         if (feature !== undefined) {
             const popup = this.getPopup();
-            let attributes = feature.get("attributes");
-            if (this.cfg_models.includes(feature.get("model"))) {
-                const model = this.models.find(
-                    (el) => el.model.resModel === feature.get("model")
-                );
-                this.mountGeoengineRecord({
-                    popup,
-                    archInfo: model.archInfo,
-                    templateDocs: model.archInfo.templateDocs,
-                    model: model.model,
-                    attributes,
-                });
-            } else {
-                this.mountGeoengineRecord({
-                    popup,
-                    archInfo: this.props.archInfo,
-                    templateDocs: this.props.archInfo.templateDocs,
-                    model: this.props.data,
-                    attributes,
-                });
+            if (feature !== undefined) {
+                var attributes = feature.get("attributes");
+
+                if (this.cfg_models.includes(feature.get("model"))) {
+                    const model = this.models.find(
+                        (el) => el.model.resModel === feature.get("model")
+                    );
+                    this.mountGeoengineRecord({
+                        popup,
+                        archInfo: model.archInfo,
+                        templateDocs: model.archInfo.templateDocs,
+                        model: model.model,
+                        attributes,
+                    });
+                } else {
+                    this.mountGeoengineRecord({
+                        popup,
+                        archInfo: this.props.archInfo,
+                        templateDocs: this.props.archInfo.templateDocs,
+                        model: this.props.data,
+                        attributes,
+                    });
+                }
+
+                var coord = ol.extent.getCenter(feature.getGeometry().getExtent());
+                this.overlay.setPosition(coord);
             }
-            let coord = ol.extent.getCenter(feature.getGeometry().getExtent());
-            this.overlay.setPosition(coord);
         } else {
             this.hidePopup();
         }
@@ -610,7 +614,7 @@ export class GeoengineRenderer extends Component {
     mountGeoengineRecord({popup, archInfo, templateDocs, model, attributes, record}) {
         this.record =
             record === undefined
-                ? model.records.find((record) => record._values.id === attributes.id)
+                ? model.records.find((element) => element._values.id === attributes.id)
                 : record;
         mount(GeoengineRecord, popup, {
             env: this.env,
@@ -629,7 +633,7 @@ export class GeoengineRenderer extends Component {
      */
     onDisplayPopupRecord(record) {
         const popup = this.getPopup();
-        const feature = this.vectorSource.getFeatureById(record.id);
+        const feature = this.vectorSource.getFeatureById(record.resId);
         if (feature) {
             this.mountGeoengineRecord({
                 popup,
@@ -664,7 +668,7 @@ export class GeoengineRenderer extends Component {
             .getExtent();
         var infinite_extent = [Infinity, Infinity, -Infinity, -Infinity];
         if (JSON.stringify(extent) === JSON.stringify(infinite_extent)) {
-            extent = [-13360714.671289, 5314503.622, 8284735.328607, 7099727.320865]
+            extent = [-13360714.671289, 5314503.622, 8284735.328607, 7099727.320865];
         }
 
         if (JSON.stringify(extent) !== JSON.stringify(infinite_extent)) {
@@ -691,11 +695,11 @@ export class GeoengineRenderer extends Component {
      * openRecord method.
      */
     onInfoBoxClicked() {
-        var viewIds = this.env?.config?.views
-        var formViewId = null
+        var viewIds = this.env.config.views;
+        var formViewId = null;
 
-        if (viewIds){
-            formViewId = viewIds.filter(subList => subList.includes("form"));
+        if (viewIds) {
+            formViewId = viewIds.filter((subList) => subList.includes("form"));
         }
         this.props.openRecord(this.record.resModel, this.record.resId, formViewId);
     }
@@ -807,7 +811,7 @@ export class GeoengineRenderer extends Component {
 
     /**
      * This method assigns a new source with the revalued domain.
-     * @param {*} cfg
+     * @param {*} vector
      * @param {*} layer
      */
     async onVectorLayerModelDomainChanged(vector, layer) {
@@ -909,7 +913,7 @@ export class GeoengineRenderer extends Component {
         let data = await this.orm.searchRead(cfg.model, [domain][0], fields_to_read);
         const modelsRecords = this.models.find((e) => e.model.resModel === cfg.model)
             .model.records;
-        data = data.map((data) => modelsRecords.find((rec) => rec.resId === data.id));
+        data = data.map((dat) => modelsRecords.find((rec) => rec.resId === dat.id));
         return data;
     }
 
@@ -939,6 +943,7 @@ export class GeoengineRenderer extends Component {
      * This method is called when a layer uses another model.
      * @param {*} cfg
      * @param {*} lv
+     * @param {*} res
      */
     useRelatedModel(cfg, lv, res) {
         const vectorSource = new ol.source.Vector();
@@ -988,7 +993,7 @@ export class GeoengineRenderer extends Component {
     /**
      * Loads the model's view that is passed to the layer.
      * @param {*} model
-     * @param {*} domain
+     * @param {*} view
      */
     async loadView(model, view) {
         const viewRegistry = registry.category("views");
@@ -1099,6 +1104,7 @@ export class GeoengineRenderer extends Component {
             };
             if (json_geometry) {
                 const feature = new ol.Feature({
+                    geometry: new ol.format.GeoJSON().readGeometry(json_geometry),
                     //geometry: new ol.format.GeoJSON().readGeometry(json_geometry),
                     geometry: new ol.format.GeoJSON(projection).readGeometry(json_geometry),
                     attributes: attributes,
@@ -1232,9 +1238,9 @@ export class GeoengineRenderer extends Component {
 
     styleVectorLayerDefault(cfg) {
         const color_hex = cfg.begin_color || DEFAULT_BEGIN_COLOR;
-        var opacity = cfg.layer_opacity
+        var opacity = cfg.layer_opacity;
         if (cfg.layer_transparent) {
-            opacity = 0.0
+            opacity = 0.0;
         }
         var color = chroma(color_hex).alpha(opacity).css();
         // Basic
@@ -1282,7 +1288,7 @@ export class GeoengineRenderer extends Component {
     /**
      * Create a feature style based on the color table.
      * @param {*} colors
-     * @returns
+     * @returns {Object}
      */
     createStylesWithColors(colors) {
         const styles_map = {};

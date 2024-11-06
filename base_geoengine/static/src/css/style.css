@@ -389,13 +389,13 @@
     left: 0.5em;
 }
 
-/* .form-check {
+.o_layer_panel .form-check {
     display: block;
     min-height: 1.625rem;
     padding-left: 0;
     margin-bottom: 0.125rem;
     margin-left: 1.5em;
-} */
+}
 
 #popup-closer {
     cursor: pointer;

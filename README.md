@@ -17,7 +17,14 @@ TODO: add repo description.
 
 [//]: # (addons)
 
-This part will be replaced when running the oca-gen-addons-table script from OCA/maintainer-tools.
+Available addons
+----------------
+addon | version | maintainers | summary
+--- | --- | --- | ---
+[base_geoengine](base_geoengine/) | 17.0.1.0.0 |  | Geospatial support for Odoo
+[base_geoengine_demo](base_geoengine_demo/) | 17.0.1.0.0 |  | Geo spatial support Demo
+[geoengine_base_geolocalize](geoengine_base_geolocalize/) | 17.0.1.0.0 |  | Geospatial support for base_geolocalize
+[geoengine_partner](geoengine_partner/) | 17.0.1.0.0 |  | Geospatial support of partners
 
 [//]: # (end addons)
 

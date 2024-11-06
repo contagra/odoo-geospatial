@@ -4,22 +4,27 @@
  * Copyright 2023 ACSONE SA/NV
  */
 
-import {registry} from "@web/core/registry";
-import {_lt} from "@web/core/l10n/translation";
+import {Component} from "@odoo/owl";
 import {DomainSelectorFieldInput} from "../domain_selector_field_input/domain_selector_field_input.esm";
-import {DomainSelectorFieldInputForActiveIds} from "../domain_selector_field_input_for_active_ids/domain_selector_field_input_for_active_ids.esm";
-import {DomainSelectorFieldInputWithTags} from "../domain_selector_field_input_with_tags/domain_selector_field_input_with_tags.esm";
+import {
+    DomainSelectorFieldInputForActiveIds
+} from "../domain_selector_field_input_for_active_ids/domain_selector_field_input_for_active_ids.esm";
+import {
+    DomainSelectorFieldInputWithTags
+} from "../domain_selector_field_input_with_tags/domain_selector_field_input_with_tags.esm";
+import {_lt} from "@web/core/l10n/translation";
 import {onDidChange} from "../domain_selector_operators.esm";
+import {registry} from "@web/core/registry";
 
 const dso = registry.category("domain_selector/operator");
-
-import {Component} from "@odoo/owl";
 
 /**
  * This method is extended from DomainSelectorNumberField to add some operators
  * ("in active_ids", "not in active_ids", "in", "not in").
  */
-export class DomainSelectorNumberFieldExtend extends Component {}
+export class DomainSelectorNumberFieldExtend extends Component {
+}
+
 Object.assign(DomainSelectorNumberFieldExtend, {
     template: "base_geoengine.DomainSelectorNumberFieldExtend",
     components: {

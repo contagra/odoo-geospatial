@@ -6,9 +6,9 @@
 
 import {Field} from "@web/views/fields/field";
 import {Widget} from "@web/views/widgets/widget";
-import {visitXML} from "@web/core/utils/xml";
 import {_lt} from "@web/core/l10n/translation";
-import {archParseBoolean, getActiveActions, processButton} from "@web/views/utils";
+import {archParseBoolean, getActiveActions} from "@web/views/utils";
+import {visitXML} from "@web/core/utils/xml";
 
 export const INFO_BOX_ATTRIBUTE = "info_box";
 
@@ -16,7 +16,6 @@ export class GeoengineArchParser {
     parse(xmlDoc, models, modelName) {
         const templateDocs = {};
         const fieldNodes = {};
-        const jsClass = xmlDoc.getAttribute("js_class");
         const activeFields = {};
         const geoengineAttr = {};
         let widgetNextId = 0;
@@ -63,8 +62,7 @@ export class GeoengineArchParser {
                     node,
                     models,
                     modelName,
-                    "geoengine",
-                    jsClass
+                    "geoengine"
                 );
                 const name = fieldInfo.name;
                 fieldNodes[name] = fieldInfo;

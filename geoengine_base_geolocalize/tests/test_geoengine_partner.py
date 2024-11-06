@@ -1,22 +1,34 @@
 # Copyright 2015-2017 ACSONE SA/NV (<http://acsone.eu>)
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+import requests
+
 from odoo.tests.common import TransactionCase
 
 
 class TestGeoenginePartner(TransactionCase):
-    def test_get_location(self):
+    @classmethod
+    def setUpClass(cls):
+        cls._super_send = requests.Session.send
+        super().setUpClass()
+
+    @classmethod
+    def _request_handler(cls, s, r, /, **kw):
+        """Don't block external requests."""
+        return cls._super_send(s, r, **kw)
+
+    def test_get_geo_point(self):
         partner_id = self.env.ref("base.user_root").partner_id
         partner_id.partner_longitude = False
         partner_id.partner_latitude = False
         self.assertFalse(
-            partner_id.location, "Should not have location with no latlon"
+            partner_id.geo_point, "Should not have geo_point with no latlon"
         )
         partner_id.partner_latitude = 20
         self.assertFalse(
-            partner_id.location, "Should not have location with no latlon"
+            partner_id.geo_point, "Should not have geo_point with no latlon"
         )
         partner_id.partner_longitude = 20
-        self.assertTrue(partner_id.location, "Should have location")
+        self.assertTrue(partner_id.geo_point, "Should have geo_point")
 
     def test_geo_localize(self):
         vals = {

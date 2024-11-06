@@ -41,7 +41,7 @@
                                         value="vector.isVisible"
                                         t-on-change="() => this.onVectorChange(vector, 'onVisibleChanged', !vector.isVisible)"
                                     >
-                                        <t t-out="vector.name" />
+                                        <t t-esc="vector.name" />
                                     </CheckBox>
                                     <button
                                         t-if="vector.model_id !== false"
@@ -82,7 +82,7 @@
                             t-as="layer"
                             t-key="layer.id"
                         >
-                            <div class="form-check o_radio_item d-flex align-items-center" aria-atomic="true">
+                            <div class="form-check o_radio_item" aria-atomic="true">
                                 <input
                                     type="radio"
                                     t-att-checked="layer.isVisible"
@@ -93,10 +93,9 @@
                                     t-on-change="() => this.onRasterChange(layer)"
                                 />
                                 <label
-                                    class="form-check-label o_form_label ml-1"
+                                    class="form-check-label o_form_label"
                                     t-att-for="layer.name"
-                                    t-out="layer.name"
-                                    style="margin-left: 6px"
+                                    t-esc="layer.name"
                                 />
                                 <button
                                     t-if="isGeoengineAdmin"
@@ -111,7 +110,7 @@
                 </section>
             </div>
             <div t-else="" class="d-flex justify-content-center text-900">
-                <span class="title-panel">Layers (<t t-out="numberOfLayers" />)</span>
+                <span class="title-panel">Layers (<t t-esc="numberOfLayers" />)</span>
             </div>
         </div>
     </t>

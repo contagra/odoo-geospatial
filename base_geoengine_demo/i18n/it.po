@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2024-01-26 11:36+0000\n"
+"PO-Revision-Date: 2024-03-12 13:37+0000\n"
 "Last-Translator: mymage <stefano.consolaro@mymage.it>\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -77,7 +77,7 @@ msgstr "Nome visualizzato"
 #. module: base_geoengine_demo
 #: model_terms:ir.ui.view,arch_db:base_geoengine_demo.dummy_zip_form
 msgid "Dummy"
-msgstr "Semplice"
+msgstr "Principiante"
 
 #. module: base_geoengine_demo
 #: model:ir.ui.menu,name:base_geoengine_demo.geoengine_demo_menu
@@ -129,12 +129,6 @@ msgstr "ID:"
 #: model:geoengine.vector.layer,name:base_geoengine_demo.geoengine_vector_layer_intersect_active_ids
 msgid "Intersect point and geom"
 msgstr "Interseca punto e geometria"
-
-#. module: base_geoengine_demo
-#: model:ir.model.fields,field_description:base_geoengine_demo.field_dummy_zip____last_update
-#: model:ir.model.fields,field_description:base_geoengine_demo.field_geoengine_demo_automatic_retailing_machine____last_update
-msgid "Last Modified on"
-msgstr "Ultima modifica il"
 
 #. module: base_geoengine_demo
 #: model:ir.model.fields,field_description:base_geoengine_demo.field_dummy_zip__write_uid
@@ -326,3 +320,6 @@ msgstr "CAP"
 #: model:geoengine.raster.layer,name:base_geoengine_demo.geoengine_raster_layer_wmts
 msgid "sgmc2"
 msgstr "sgmc2"
+
+#~ msgid "Last Modified on"
+#~ msgstr "Ultima modifica il"

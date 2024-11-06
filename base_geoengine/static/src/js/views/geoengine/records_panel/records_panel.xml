@@ -2,8 +2,8 @@
 <templates>
     <t t-name="base_geoengine.RecordsPanel">
         <div
-            class="menu border-end scroller"
-            t-attf-class="{{ state.isFolded ? 'o_layer_panel_fold ' : 'o_layer_panel bg-view' }}"
+            class="menu border-end"
+            t-attf-class="{{ state.isFolded ? 'o_layer_panel_fold' : 'o_layer_panel bg-view scroller' }}"
         >
             <div
                 class="w-100 d-flex"
@@ -23,6 +23,7 @@
                         class="o_search_panel_section_header text-uppercase cursor-default mb-2"
                     >
                         <span class="fs-6 fw-bold">
+                            <t t-esc="state.modelDescription" />
                             <t t-out="state.modelDescription" />
                         </span>
                     </header>
@@ -39,7 +40,7 @@
                                 t-on-click="() => this.onDisplayPopupRecord(record)"
                             >
                                 <span>
-                                    <t t-out="record.data.display_name" />
+                                    <t t-esc="record.data.display_name" />
                                 </span>
                             </button>
                             <t t-if="state.isClicked === record.resId">
@@ -68,7 +69,7 @@
             </div>
             <div t-else="" class="d-flex justify-content-center text-900">
                 <span class="title-panel">Records (<t
-                        t-out="props.list.records.length"
+                        t-esc="props.list.records.length"
                     />)</span>
             </div>
         </div>
